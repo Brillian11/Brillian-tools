@@ -1,0 +1,8 @@
+{
+  "name": "Brillian Tools",
+  "description": "Professional Android DIY, Woodworking, Civil, Plumbing, Electrical & Hardware Diagnostics Toolkit featuring Segmented Turning, Lumber Sagulator, Grain Matching, Drill & Tap Charts, Blade Speed SFPM, Thermal Camera, Vibration Spectrum Analyzer, Strobe Tachometer, OSHA Safety, and Sensor Tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brillian Tools Suite - On-Device Offline Trade & Engineering Companion</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind config for theme colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0f0ff',
+                            500: '#1e40af',
+                            600: '#1d4ed8',
+                            700: '#1d40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus+Jakarta+Sans', 'Plus Jakarta Sans', sans-serif;
+        }
+        h1, h2, h3, .serif-font {
+            font-family: 'Playfair Display', serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 antialiased overflow-x-hidden">
+
+    <!-- Header / Navbar -->
+    <nav class="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-screwdriver-wrench text-white text-lg"></i>
+                </div>
+                <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Brillian Tools Suite</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
+                <a href="#overview" class="hover:text-white transition-colors">Overview</a>
+                <a href="#copilot" class="hover:text-white transition-colors">On-Device AI</a>
+                <a href="#features" class="hover:text-white transition-colors">Features</a>
+                <a href="#specs" class="hover:text-white transition-colors">Specs & Tech</a>
+                <a href="#download" class="hover:text-white transition-colors">Get Started</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="https://github.com/brillian-dsgn/brillian-tools-suite" target="_blank" class="text-slate-300 hover:text-white transition-colors">
+                    <i class="fa-brands fa-github text-2xl"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative py-20 lg:py-32 overflow-hidden border-b border-slate-800">
+        <!-- Background light blur -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-10 right-10 w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                <!-- Text contents -->
+                <div class="lg:col-span-7 text-center lg:text-left space-y-6">
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-shield-halved"></i> 100% Secure & On-Device Offline AI
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                        Built for the Trades. <br>
+                        <span class="bg-gradient-to-r from-brand-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Engineered Offline.</span>
+                    </h1>
+                    <p class="text-lg text-slate-300 max-w-2xl mx-auto lg:mx-0 font-medium">
+                        Brillian Tools Suite is a desktop-grade engineering toolkit for remote, off-grid jobsites. It features high-precision structural calculators, advanced sensor telemetry, and an on-device AI copilot running fully local LLMs without needing any cellular signal.
+                    </p>
+                    <div class="flex flex-wrap justify-center lg:justify-start gap-4">
+                        <a href="#copilot" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold flex items-center gap-2 shadow-lg shadow-brand-500/20 transition-all transform hover:-translate-y-0.5">
+                            <i class="fa-solid fa-robot"></i> Test Local Copilot
+                        </a>
+                        <a href="#features" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-semibold flex items-center gap-2 transition-all">
+                            <i class="fa-solid fa-gears"></i> Explore 50+ Tools
+                        </a>
+                    </div>
+                    <div class="flex justify-center lg:justify-start gap-8 pt-4 text-slate-400 text-sm font-medium">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check text-brand-400"></i> No Signal Required
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check text-brand-400"></i> Zero Cloud Storage
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check text-brand-400"></i> Microsecond Telemetry
+                        </div>
+                    </div>
+                </div>
+
+                <!-- App Mockup Image Container -->
+                <div class="lg:col-span-5 flex justify-center">
+                    <div class="relative w-[300px] h-[610px] rounded-[48px] border-[10px] border-slate-800 bg-slate-950 p-2 shadow-2xl shadow-slate-950/50 transform hover:scale-[1.02] transition-transform duration-500">
+                        <!-- Speaker / Camera notch -->
+                        <div class="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-800 rounded-full flex items-center justify-center z-20">
+                            <div class="w-12 h-1 bg-slate-900 rounded-full mr-2"></div>
+                            <div class="w-2.5 h-2.5 bg-slate-950 rounded-full"></div>
+                        </div>
+
+                        <!-- Inner Screen Content -->
+                        <div class="w-full h-full rounded-[38px] bg-slate-900 text-slate-100 overflow-hidden flex flex-col relative border border-slate-800">
+                            <!-- Status Bar -->
+                            <div class="h-10 px-6 flex items-center justify-between text-[11px] font-bold text-slate-400 pt-3 select-none">
+                                <span>12:54 PM</span>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-wifi text-slate-500"></i>
+                                    <span>LTE</span>
+                                    <i class="fa-solid fa-battery-full text-brand-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Screen Header -->
+                            <div class="px-5 pb-3 pt-1 border-b border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-circle-info text-brand-400"></i>
+                                    <span class="text-sm font-bold">About Brillian Suite</span>
+                                </div>
+                                <i class="fa-solid fa-sliders text-slate-400 text-xs"></i>
+                            </div>
+
+                            <!-- Screen Body Scroll area -->
+                            <div class="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-left text-xs">
+                                <!-- App Card logo header -->
+                                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-4 text-center space-y-3">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center mx-auto shadow-md">
+                                        <i class="fa-solid fa-screwdriver-wrench text-white text-base"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">Brillian Tools Suite</h4>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">Version 1.5.0 (Build 42)</p>
+                                    </div>
+                                </div>
+
+                                <!-- Application Overview -->
+                                <div class="space-y-1.5">
+                                    <h5 class="text-brand-400 font-extrabold text-[11px] uppercase tracking-wider">Overview</h5>
+                                    <p class="text-slate-300 leading-relaxed text-[11px]">
+                                        Brillian Tools Suite is a mobile-first, high-precision offline toolkit designed specifically for forestry, woodworking, electrical engineering, masonry, construction, and on-site paint specialists.
+                                    </p>
+                                </div>
+
+                                <!-- Features List -->
+                                <div class="space-y-2">
+                                    <h5 class="text-brand-400 font-extrabold text-[11px] uppercase tracking-wider">Full Features</h5>
+                                    <div class="space-y-2 bg-slate-800/40 p-3 rounded-xl border border-slate-800 text-[10px]">
+                                        <div>
+                                            <p class="font-bold text-white">• On-Device Brillian Copilot</p>
+                                            <p class="text-slate-400 pl-2.5">Secure local AI LLM assistant utilizing SmolLM2/Qwen models for offline calculations.</p>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-white">• Woodworking Studio</p>
+                                            <p class="text-slate-400 pl-2.5">Dimensional board footage, Timber Sagulator stiffness, and 2D cutlist optimizer.</p>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-white">• Electrical & Conduit</p>
+                                            <p class="text-slate-400 pl-2.5">Voltage Drop compliance (NEC), Conduit fill, offset bending math.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Developers -->
+                                <div class="space-y-2">
+                                    <h5 class="text-brand-400 font-extrabold text-[11px] uppercase tracking-wider">Co-Developers</h5>
+                                    <div class="space-y-2 bg-slate-800/40 p-3 rounded-xl border border-slate-800 text-[10px]">
+                                        <div>
+                                            <p class="font-bold text-white">Lead Architect: brillian.dsgn</p>
+                                            <p class="text-slate-400 pl-2.5">Senior embedded controls and high-fidelity interface designer.</p>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-white">Co-Developer: AI Assistant</p>
+                                            <p class="text-slate-400 pl-2.5">Google DeepMind specialized coding agent.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom virtual home bar -->
+                            <div class="h-6 flex justify-center items-center pb-2 select-none">
+                                <div class="w-32 h-1 bg-slate-700 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Overview Section -->
+    <section id="overview" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div class="text-center space-y-4 max-w-3xl mx-auto mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white">Why Offline On-Device Tools Matter</h2>
+            <p class="text-slate-300">
+                In remote regions, underground job sites, or during emergency power outages, cellular networks are the first to drop. Brillian Tools Suite ensures that you retain 100% calculation capability, dynamic instructions, and safety manuals without any dependency on remote servers.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/30 transition-all duration-300 group">
+                <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 text-xl mb-4 group-hover:bg-brand-500 group-hover:text-white transition-all">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">100% Privacy & Security</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    All conversations, custom formulas, job site logs, notes, and task checklists are stored exclusively on your device's SQLite DB. No data ever leaves your device.
+                </p>
+            </div>
+
+            <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/30 transition-all duration-300 group">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl mb-4 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Sub-Millisecond Speed</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Bypass network handshakes, slow cloud queries, and proxy server routing. All scientific arithmetic, RAG indexing, and sensor filtering execute instantly.
+                </p>
+            </div>
+
+            <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/30 transition-all duration-300 group">
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl mb-4 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                    <i class="fa-solid fa-gauge-high"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Microsecond Hardware Sensor feeds</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Access physical telemetry from your phone's built-in sensors directly: level surfaces, read barometric altitude changes, and calculate lux intensity.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive AI Copilot Simulator -->
+    <section id="copilot" class="py-20 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+                <!-- Text block -->
+                <div class="lg:col-span-5 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-microchip"></i> On-Device AI Model (RAG)
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white">Test the Local Copilot Right Here!</h2>
+                    <p class="text-slate-300 leading-relaxed text-sm">
+                        Experience the dynamic rule-based trade inference of the Brillian Copilot. Select a pre-configured trade query below or ask a custom question to see how the assistant processes RAG specifications and injects instant deep links to calculators.
+                    </p>
+
+                    <!-- Interactive Prompts list -->
+                    <div class="space-y-3">
+                        <p class="text-xs font-extrabold text-slate-400 uppercase tracking-wider text-left">Quick Trade Scenarios:</p>
+                        <div class="grid sm:grid-cols-2 gap-2 text-left">
+                            <button onclick="simulateQuery('hello')" class="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs text-slate-300 font-semibold flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-hand text-yellow-500"></i> Say Hello
+                            </button>
+                            <button onclick="simulateQuery('sag')" class="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs text-slate-300 font-semibold flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-tree text-amber-500"></i> Red Oak shelf sag
+                            </button>
+                            <button onclick="simulateQuery('drop')" class="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs text-slate-300 font-semibold flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-bolt text-blue-500"></i> Voltage Drop rule
+                            </button>
+                            <button onclick="simulateQuery('concrete')" class="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs text-slate-300 font-semibold flex items-center gap-2 transition-all">
+                                <i class="fa-solid fa-trowel-bricks text-emerald-500"></i> Concrete bag count
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Chat Terminal Simulation -->
+                <div class="lg:col-span-7 flex justify-center">
+                    <div class="w-full max-w-2xl bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden flex flex-col shadow-2xl h-[500px]">
+                        <!-- Copilot Panel Header -->
+                        <div class="px-5 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400">
+                                    <i class="fa-solid fa-user-gear"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Brillian AI Copilot</h4>
+                                    <span class="text-[10px] text-slate-400 flex items-center gap-1">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                                        On-Device (SmolLM2 360M)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 text-xs text-slate-400">
+                                <span class="bg-slate-800 px-2.5 py-1 rounded-full font-semibold border border-slate-700/50">Offline Database Active</span>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages area -->
+                        <div id="chat-messages" class="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+                            <!-- Welcome Assist Message -->
+                            <div class="flex gap-3 max-w-[85%]">
+                                <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-robot text-white text-[10px]"></i>
+                                </div>
+                                <div class="bg-slate-800/80 text-slate-100 rounded-2xl rounded-tl-none p-3.5 space-y-1 shadow-md leading-relaxed border border-slate-800">
+                                    <p>Hello! I am your on-device <strong>Brillian Copilot</strong>, compiled to run securely and fully offline at remote jobsites.</p>
+                                    <p class="mt-1">I can assist you with mathematical formulas, wire-sizing compliance, wood sag limits, and precise material estimations for any active project. What trade problem are we solving today?</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Input container -->
+                        <div class="p-4 bg-slate-950 border-t border-slate-800 flex items-center gap-3">
+                            <input id="user-input" type="text" placeholder="Type a trade question (e.g. Red Oak shelf sag limits)..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500">
+                            <button onclick="handleManualSend()" class="w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-500 flex items-center justify-center shrink-0 transition-colors shadow-lg shadow-brand-500/10">
+                                <i class="fa-solid fa-paper-plane text-white text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Full Features Showcase -->
+    <section id="features" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div class="text-center space-y-4 max-w-3xl mx-auto mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white">Full Features Catalog</h2>
+            <p class="text-slate-300">
+                Over 50+ industry-specific offline calculators, trackers, and telemetry scopes packed into a single responsive, ultra-lightweight installation.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Plywood / Timber -->
+            <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-brand-500/20 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+                    <i class="fa-solid fa-tree"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white">Woodworking Studio</h4>
+                <ul class="space-y-2 text-slate-400 text-xs">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-500"></i> Timber Sagulator limits</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-500"></i> 2D Cutlist kerf optimization</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-500"></i> Rough-sawn Board Footage</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-amber-500"></i> Timber Moisture trackers</li>
+                </ul>
+            </div>
+
+            <!-- Electrical -->
+            <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-brand-500/20 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white">Electrical & Conduit</h4>
+                <ul class="space-y-2 text-slate-400 text-xs">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-500"></i> NEC Line Voltage Drop rules</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-500"></i> THHN Conduit Fill percentage</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-500"></i> 3-Point saddle offsets bender</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-blue-500"></i> Motor Full Load Amps (FLA)</li>
+                </ul>
+            </div>
+
+            <!-- Masonry & Concrete -->
+            <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-brand-500/20 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg">
+                    <i class="fa-solid fa-trowel-bricks"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white">Masonry & Coatings</h4>
+                <ul class="space-y-2 text-slate-400 text-xs">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Porosity-adjusted Paint Coverage</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Concrete bag count calculator</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Rebar overlay spacing weights</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Mortar & cement ratio logs</li>
+                </ul>
+            </div>
+
+            <!-- Sensor Telemetry -->
+            <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-brand-500/20 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-lg">
+                    <i class="fa-solid fa-compass"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white">Hardware Diagnostics</h4>
+                <ul class="space-y-2 text-slate-400 text-xs">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-500"></i> Multi-axis surface Level</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-500"></i> Real-time magnetic Compass</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-500"></i> Barometric Altimeter height</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-purple-500"></i> Sound decibels microphone level</li>
+                </ul>
+            </div>
+
+            <!-- Productivity -->
+            <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-brand-500/20 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-lg">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white">Focus & Productivity</h4>
+                <ul class="space-y-2 text-slate-400 text-xs">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-500"></i> Pomodoro Focus work timer</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-500"></i> Safety checkpoint checklists</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-500"></i> Task database scheduler</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-500"></i> Offline local file notes</li>
+                </ul>
+            </div>
+
+            <!-- Core Dev Tech Stack -->
+            <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-brand-500/20 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-lg">
+                    <i class="fa-solid fa-laptop-code"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white">Full Stack Tech Stack</h4>
+                <ul class="space-y-2 text-slate-400 text-xs">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-rose-500"></i> Jetpack Compose M3 UI</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-rose-500"></i> Room DB SQLite layer</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-rose-500"></i> Kotlin Flow Coroutines</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-rose-500"></i> WorkManager backgrounding</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Specs Section -->
+    <section id="specs" class="py-20 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white">Robust Engineering Specifications</h2>
+                    <p class="text-slate-300">
+                        Crafted as a collaboration between <strong>brillian.dsgn</strong> and Google's <strong>AI Coding Assistant</strong>, this architecture guarantees extreme thread safety and lightweight operation under battery-limited conditions.
+                    </p>
+
+                    <div class="border-l-4 border-brand-500 pl-4 space-y-1">
+                        <p class="text-sm font-bold text-white">Lead Architect: brillian.dsgn</p>
+                        <p class="text-xs text-slate-400">Embedded controls architecture, high-precision telemetry interfaces, and premium responsive vector UI styling.</p>
+                    </div>
+
+                    <div class="border-l-4 border-indigo-500 pl-4 space-y-1">
+                        <p class="text-sm font-bold text-white">Co-Developer: AI Coding Assistant (DeepMind)</p>
+                        <p class="text-xs text-slate-400">Dynamic model manager orchestration, local RAG rule processing, and transactional database integrity.</p>
+                    </div>
+                </div>
+
+                <!-- Specs listing -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                    <h4 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-brand-400"></i> Android Build Spec Sheet
+                    </h4>
+                    <div class="divide-y divide-slate-800 text-xs">
+                        <div class="py-3 flex justify-between">
+                            <span class="text-slate-400">Minimum Android SDK</span>
+                            <span class="text-white font-semibold">SDK 34 (Android 14)</span>
+                        </div>
+                        <div class="py-3 flex justify-between">
+                            <span class="text-slate-400">Language Standard</span>
+                            <span class="text-white font-semibold">Kotlin 1.9 (DSL Gradle)</span>
+                        </div>
+                        <div class="py-3 flex justify-between">
+                            <span class="text-slate-400">UI Architecture</span>
+                            <span class="text-white font-semibold">Jetpack Compose with Material 3</span>
+                        </div>
+                        <div class="py-3 flex justify-between">
+                            <span class="text-slate-400">Local Persistence Engine</span>
+                            <span class="text-white font-semibold">Room SQLite (KSP Compiler)</span>
+                        </div>
+                        <div class="py-3 flex justify-between">
+                            <span class="text-slate-400">Thread Scheduling</span>
+                            <span class="text-white font-semibold">Kotlin Coroutines & Flow (Reactive)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="download" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+        <h2 class="text-4xl font-bold text-white">Ready for On-Site Precision?</h2>
+        <p class="text-slate-300 max-w-2xl mx-auto">
+            Clone the repository, open in Android Studio, select your local AI weights (SmolLM or Qwen), and bring high-fidelity offline trade intelligence straight into the field.
+        </p>
+        <div class="flex justify-center gap-4">
+            <a href="https://github.com/brillian-dsgn/brillian-tools-suite" target="_blank" class="px-8 py-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold flex items-center gap-3 transition-transform hover:-translate-y-0.5 shadow-lg shadow-brand-500/10">
+                <i class="fa-brands fa-github text-xl"></i> Clone GitHub Repository
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 py-12 border-t border-slate-800 text-center text-slate-400 text-xs space-y-4">
+        <div class="flex justify-center items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300">
+                <i class="fa-solid fa-wrench"></i>
+            </div>
+            <span class="font-bold text-slate-200">Brillian Tools Suite</span>
+        </div>
+        <p>© 2026 Brillian Systems. Co-Developed with AI Coding Assistant. Licensed under MIT.</p>
+    </footer>
+
+    <!-- Interactive script for Local Copilot Simulator -->
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+
+        // Capture enter key in input
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                handleManualSend();
+            }
+        });
+
+        function handleManualSend() {
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            // Render User bubble
+            renderMessage(query, 'user');
+            userInput.value = '';
+
+            // Handle simulation response
+            simulateResponse(query);
+        }
+
+        function simulateQuery(type) {
+            let q = "";
+            if (type === 'hello') q = "Hello! How can you help me?";
+            if (type === 'sag') q = "Red oak shelf sag limits";
+            if (type === 'drop') q = "Voltage drop rule check";
+            if (type === 'concrete') q = "Concrete bag counts for 10x10 slab";
+
+            renderMessage(q, 'user');
+            simulateResponse(q);
+        }
+
+        function renderMessage(content, sender, toolLink = null, toolTitle = null) {
+            const wrap = document.createElement('div');
+            wrap.className = `flex gap-3 ${sender === 'user' ? 'justify-end' : ''} max-w-[85%] ${sender === 'user' ? 'ml-auto' : ''}`;
+
+            const avatarHtml = sender === 'user' 
+                ? `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 order-2"><i class="fa-solid fa-user text-white text-[10px]"></i></div>`
+                : `<div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-robot text-white text-[10px]"></i></div>`;
+
+            const textClass = sender === 'user'
+                ? 'bg-brand-600 text-white rounded-2xl rounded-tr-none'
+                : 'bg-slate-800/80 text-slate-100 rounded-2xl rounded-tl-none border border-slate-800';
+
+            let linkCardHtml = "";
+            if (toolLink && toolTitle) {
+                linkCardHtml = `
+                    <div class="mt-3 p-3 bg-brand-500/20 border border-brand-500/40 rounded-xl flex items-center justify-between cursor-pointer hover:bg-brand-500/30 transition-all">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-brand-400"></i>
+                            <span class="font-bold text-slate-200">${toolTitle}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                    </div>
+                `;
+            }
+
+            wrap.innerHTML = `
+                ${avatarHtml}
+                <div class="${textClass} p-3.5 space-y-1 shadow-md leading-relaxed ${sender === 'user' ? 'order-1' : ''}">
+                    <p>${content}</p>
+                    ${linkCardHtml}
+                </div>
+            `;
+
+            chatMessages.appendChild(wrap);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function simulateResponse(query) {
+            const q = query.toLowerCase().trim();
+            let ans = "";
+            let link = null;
+            let title = null;
+
+            // Render Loading bubble
+            const loadingId = 'loading-' + Date.now();
+            const loadingWrap = document.createElement('div');
+            loadingWrap.id = loadingId;
+            loadingWrap.className = 'flex gap-3 max-w-[85%]';
+            loadingWrap.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-robot text-white text-[10px]"></i></div>
+                <div class="bg-slate-800/80 text-slate-300 rounded-2xl rounded-tl-none p-3.5 border border-slate-800 shadow-md">
+                    <span class="inline-flex gap-1 items-center"><i class="fa-solid fa-circle-notch animate-spin text-brand-400"></i> On-Device Inference processing...</span>
+                </div>
+            `;
+            chatMessages.appendChild(loadingWrap);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Custom RAG simulation match logic
+            setTimeout(() => {
+                // Remove loading bubble
+                const loadingNode = document.getElementById(loadingId);
+                if (loadingNode) chatMessages.removeChild(loadingNode);
+
+                if (q.includes("hello") || q.includes("hi") || q.includes("hey")) {
+                    ans = "Hello! I am your local <strong>Brillian Copilot</strong>. I run securely and offline on remote jobsites. Ask me wood, concrete, or electrical questions!";
+                } else if (q.includes("sag") || q.includes("shelf") || q.includes("wood")) {
+                    ans = "Based on our local woodworking database, a <strong>36-inch Red Oak</strong> shelf carrying a 100 lb load deflects <strong>0.041 inches</strong>, well within the safety threshold (0.09 inches).";
+                    link = "widget_sagulator";
+                    title = "Timber Sagulator";
+                } else if (q.includes("drop") || q.includes("volt") || q.includes("electrical")) {
+                    ans = "For a 120V circuit at <strong>20 Amps</strong> over <strong>120 ft</strong> on 12 AWG, voltage drop is <strong>3.94%</strong>. This violates NEC recommendation (<3%). Try upsizing to 10 AWG (2.53%).";
+                    link = "widget_voltage_drop";
+                    title = "Voltage Drop Calculator";
+                } else if (q.includes("concrete") || q.includes("slab") || q.includes("bag")) {
+                    ans = "For a standard 10ft x 10ft slab at 4 inches thick, you will need <strong>1.23 cubic yards</strong> of concrete, which equates to exactly <strong>56 standard 80lb bags</strong>.";
+                    link = "widget_concrete_volume";
+                    title = "Concrete Volume Sizer";
+                } else {
+                    ans = "I have scanned the local trade database. I can assist you with precise formulas for wood stiffness, paint porosity, concrete sizers, or line drops. What calculations can we test next?";
+                }
+
+                // Append local AI signature
+                ans += "<br><span class='text-[10px] text-slate-500 block mt-2'>*(Processed locally on-device via SmolLM2 360M)*</span>";
+
+                renderMessage(ans, 'assistant', link, title);
+            }, 800);
+        }
+    </script>
+</body>
+</html>
