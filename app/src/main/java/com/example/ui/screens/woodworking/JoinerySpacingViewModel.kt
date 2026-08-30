@@ -9,34 +9,37 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 enum class JoineryType {
-    MORTISE_TENON,  // Dominos / Floating Tenons
-    DOWELS,          // Dowel Pins
-    POCKET_HOLES,    // Pocket Hole Screws
-    BOX_JOINTS       // Finger / Box Joints
+    MORTISE_TENON,
+    DOWELS,
+    POCKET_HOLES,
+    BOX_JOINTS
 }
 
 enum class SpacingDistributionMode {
-    EQUAL_DIVISIONS, // Center to center = W / N, Edge = Spacing / 2
-    FIXED_EDGE_MARGIN // Fixed edge distance, remaining divided equally among (N-1) spans
+    EQUAL_DIVISIONS,
+    FIXED_EDGE_MARGIN
 }
 
 data class JoinerySpacingUiState(
+    val isMetric: Boolean = false,
     val joineryType: JoineryType = JoineryType.MORTISE_TENON,
     val spacingMode: SpacingDistributionMode = SpacingDistributionMode.EQUAL_DIVISIONS,
-    
-    // Inputs
+
     val workpieceWidthInches: Double = 18.0,
     val workpieceThicknessInches: Double = 0.75,
     val jointCount: Int = 3,
-    val elementSizeInches: Double = 1.5,      // Tenon width, Dowel diameter, etc.
-    val fixedEdgeMarginInches: Double = 1.5,  // When in FIXED_EDGE_MARGIN mode
-    
-    // Outputs
+    val elementSizeInches: Double = 1.5,
+    val fixedEdgeMarginInches: Double = 1.5,
+
     val centerToCenterSpacingInches: Double = 6.0,
     val edgeMarginInches: Double = 3.0,
     val gapBetweenElementsInches: Double = 4.5,
     val centerlineCoordinatesInches: List<Double> = listOf(3.0, 9.0, 15.0),
-    val centerlineCoordinatesMm: List<Double> = listOf(76.2, 228.6, 381.0)
+    val centerlineCoordinatesMm: List<Double> = listOf(76.2, 228.6, 381.0),
+
+    val c2cDisplay: String = "6.00\" (152.4 mm)",
+    val edgeDisplay: String = "3.00\" (76.2 mm)",
+    val gapDisplay: String = "4.50\" (114.3 mm)"
 )
 
 class JoinerySpacingViewModel(
@@ -50,12 +53,19 @@ class JoinerySpacingViewModel(
         recalculateSpacing()
     }
 
+    fun setUnitSystem(metric: Boolean) {
+        if (_uiState.value.isMetric != metric) {
+            _uiState.value = _uiState.value.copy(isMetric = metric)
+            recalculateSpacing()
+        }
+    }
+
     fun setJoineryType(type: JoineryType) {
         val defaultSize = when (type) {
-            JoineryType.MORTISE_TENON -> 1.5 // 1.5" (e.g. 8x40 or 10x50 domino width)
-            JoineryType.DOWELS -> 0.375       // 3/8" dowel diameter
-            JoineryType.POCKET_HOLES -> 0.5   // Pocket hole pocket width
-            JoineryType.BOX_JOINTS -> 0.5     // 1/2" finger joint pin
+            JoineryType.MORTISE_TENON -> 1.5
+            JoineryType.DOWELS -> 0.375
+            JoineryType.POCKET_HOLES -> 0.5
+            JoineryType.BOX_JOINTS -> 0.5
         }
         _uiState.value = _uiState.value.copy(
             joineryType = type,
@@ -70,12 +80,18 @@ class JoinerySpacingViewModel(
     }
 
     fun updateInputs(width: Double, thickness: Double, count: Int, elementSize: Double, fixedEdge: Double) {
+        val isMetric = _uiState.value.isMetric
+        val wIn = if (isMetric) width / 25.4 else width
+        val tIn = if (isMetric) thickness / 25.4 else thickness
+        val elemIn = if (isMetric) elementSize / 25.4 else elementSize
+        val edgeIn = if (isMetric) fixedEdge / 25.4 else fixedEdge
+
         _uiState.value = _uiState.value.copy(
-            workpieceWidthInches = width.coerceAtLeast(1.0),
-            workpieceThicknessInches = thickness.coerceAtLeast(0.1),
-            jointCount = count.coerceIn(1, 24),
-            elementSizeInches = elementSize.coerceAtLeast(0.1),
-            fixedEdgeMarginInches = fixedEdge.coerceAtLeast(0.1)
+            workpieceWidthInches = wIn.coerceAtLeast(0.1),
+            workpieceThicknessInches = tIn.coerceAtLeast(0.01),
+            jointCount = count.coerceIn(1, 48),
+            elementSizeInches = elemIn.coerceAtLeast(0.01),
+            fixedEdgeMarginInches = edgeIn.coerceAtLeast(0.01)
         )
         recalculateSpacing()
     }
@@ -85,7 +101,6 @@ class JoinerySpacingViewModel(
         val W = s.workpieceWidthInches
         val N = s.jointCount
         val elem = s.elementSizeInches
-
         val coords = mutableListOf<Double>()
         var c2c = 0.0
         var edge = 0.0
@@ -113,25 +128,20 @@ class JoinerySpacingViewModel(
             }
         }
 
+        val isMetric = s.isMetric
+        val c2cStr = if (isMetric) "%.1f mm".format(c2c * 25.4) else "%.2f\"".format(c2c)
+        val edgeStr = if (isMetric) "%.1f mm".format(edge * 25.4) else "%.2f\"".format(edge)
+        val gapStr = if (isMetric) "%.1f mm".format(gap * 25.4) else "%.2f\"".format(gap)
+
         _uiState.value = _uiState.value.copy(
             centerToCenterSpacingInches = c2c,
             edgeMarginInches = edge,
             gapBetweenElementsInches = gap,
             centerlineCoordinatesInches = coords,
-            centerlineCoordinatesMm = coords.map { it * 25.4 }
+            centerlineCoordinatesMm = coords.map { it * 25.4 },
+            c2cDisplay = c2cStr,
+            edgeDisplay = edgeStr,
+            gapDisplay = gapStr
         )
-    }
-
-    fun logJoineryPlan() {
-        val s = _uiState.value
-        val coordsStr = s.centerlineCoordinatesInches.joinToString(", ") { String.format("%.2f\"", it) }
-        viewModelScope.launch {
-            toolLogRepository.logToolActivity(
-                toolType = "WOODWORKING",
-                title = "Joinery Layout Spacing",
-                summary = "${s.jointCount}x ${s.joineryType.name} across ${s.workpieceWidthInches}\" board: Pitch ${String.format("%.2f", s.centerToCenterSpacingInches)}\", Centers at [$coordsStr]",
-                value = s.centerToCenterSpacingInches
-            )
-        }
     }
 }

@@ -1,13 +1,28 @@
 package com.example.domain.model
 
+import java.util.Locale
+
 data class ToolDefinition(
     val id: String,
     val title: String,
     val description: String,
     val category: String,
     val iconName: String,
-    val defaultSpan: Int = 1
+    val defaultSpan: Int = 1,
+    val keywords: List<String> = emptyList()
 ) {
+    fun matchesSearch(query: String): Boolean {
+        if (query.isBlank()) return true
+        val q = query.trim().lowercase(Locale.ROOT)
+        val tokens = q.split("\\s+".toRegex())
+        return tokens.all { token ->
+            title.lowercase(Locale.ROOT).contains(token) ||
+            description.lowercase(Locale.ROOT).contains(token) ||
+            category.lowercase(Locale.ROOT).contains(token) ||
+            keywords.any { it.lowercase(Locale.ROOT).contains(token) }
+        }
+    }
+
     companion object {
         val ALL_TOOLS = listOf(
             // Woodworking Suite
@@ -674,6 +689,269 @@ data class ToolDefinition(
                 category = "Painting & Coating",
                 iconName = "Palette",
                 defaultSpan = 2
+            ),
+
+            // Metalworks & Welding Suite (25 Essential Features)
+            ToolDefinition(
+                id = "widget_weld_heat_input",
+                title = "Welding Parameter & Heat Input Calculator",
+                description = "Calculates arc energy and heat input (kJ/mm or kJ/in) based on voltage, current, travel speed & efficiency factor",
+                category = "Metalworks",
+                iconName = "Science",
+                defaultSpan = 2,
+                keywords = listOf("heat input", "arc energy", "voltage", "current", "travel speed", "SMAW", "GMAW", "GTAW", "SAW", "efficiency", "KJ/mm", "KJ/in", "welding parameters")
+            ),
+            ToolDefinition(
+                id = "widget_weld_carbon_equivalent",
+                title = "Carbon Equivalent & Pre-Heat Sizer",
+                description = "Computes CE(IIW) and Pcm from steel alloy percentages to determine required preheat and interpass temperatures",
+                category = "Metalworks",
+                iconName = "Science",
+                defaultSpan = 2,
+                keywords = listOf("carbon equivalent", "CEIIW", "Pcm", "preheat", "interpass", "cold cracking", "hydrogen", "alloy", "steel metallurgy")
+            ),
+            ToolDefinition(
+                id = "widget_weld_electrode_selector",
+                title = "Electrode & Filler Metal Selector",
+                description = "Cross-reference matrix matching base metals to correct filler alloys (ER70S-6, E7018, ER308L, ER4043) and shielding gases",
+                category = "Metalworks",
+                iconName = "Construction",
+                defaultSpan = 2,
+                keywords = listOf("filler metal", "electrode", "ER70S-6", "E7018", "ER308L", "ER4043", "shielding gas", "stainless", "aluminum", "chromoly")
+            ),
+            ToolDefinition(
+                id = "widget_weld_deposition_estimator",
+                title = "Weld Deposition & Consumable Estimator",
+                description = "Computes required filler wire or stick electrode weight (kg/lb) based on joint design, plate thickness, and root gap",
+                category = "Metalworks",
+                iconName = "Calculate",
+                defaultSpan = 2,
+                keywords = listOf("deposition", "consumable", "wire weight", "stick electrode", "V-groove", "root gap", "reinforcement", "kilogram", "pound")
+            ),
+            ToolDefinition(
+                id = "widget_weld_shielding_gas",
+                title = "Shielding Gas Flow & Bottle Runtime Estimator",
+                description = "Calculates cylinder volume remaining from pressure gauge (Bar/PSI) and outputs active arc time at target flow rates",
+                category = "Metalworks",
+                iconName = "Air",
+                defaultSpan = 2,
+                keywords = listOf("shielding gas", "gas flow", "cylinder volume", "pressure gauge", "Bar", "PSI", "CFH", "arc time", "argon", "CO2")
+            ),
+            ToolDefinition(
+                id = "widget_metal_k_factor",
+                title = "Sheet Metal K-Factor & Bend Allowance",
+                description = "Calculates exact flat pattern layout lengths using material thickness, inside bend radius, bend angle, and K-factor",
+                category = "Metalworks",
+                iconName = "Straighten",
+                defaultSpan = 2,
+                keywords = listOf("K-factor", "bend allowance", "BA", "sheet metal", "bend radius", "thickness", "flat pattern", "bend physics")
+            ),
+            ToolDefinition(
+                id = "widget_metal_bend_deduction",
+                title = "Bend Deduction & Setback Sizer",
+                description = "Computes outside setback (OSSB) and bend deduction (BD) to set backgauges accurately on press brakes",
+                category = "Metalworks",
+                iconName = "Architecture",
+                defaultSpan = 2,
+                keywords = listOf("bend deduction", "BD", "setback", "OSSB", "press brake", "backgauge")
+            ),
+            ToolDefinition(
+                id = "widget_metal_press_brake_tonnage",
+                title = "Press Brake Tonnage Estimator",
+                description = "Calculates required bending tonnage based on material tensile strength, sheet thickness, bend length, and V-die opening",
+                category = "Metalworks",
+                iconName = "Speed",
+                defaultSpan = 2,
+                keywords = listOf("press brake", "tonnage", "bending force", "tensile strength", "V-die", "die opening")
+            ),
+            ToolDefinition(
+                id = "widget_metal_cone_unfolder",
+                title = "Cone, Frustum & Transition Hopper Unfolder",
+                description = "Generates 2D flat layout cutting arcs and chord lengths for round-to-round cones and eccentric reducers",
+                category = "Metalworks",
+                iconName = "AutoAwesome",
+                defaultSpan = 2,
+                keywords = listOf("cone", "frustum", "hopper", "unfolder", "flat pattern", "chord length", "eccentric reducer")
+            ),
+            ToolDefinition(
+                id = "widget_metal_square_to_round",
+                title = "Square-to-Round Transition Layout Engine",
+                description = "Computes coordinate points and true-length triangulation lines for building ventilation and exhaust duct transitions",
+                category = "Metalworks",
+                iconName = "Grain",
+                defaultSpan = 2,
+                keywords = listOf("square to round", "transition", "duct", "triangulation", "coordinates", "exhaust")
+            ),
+            ToolDefinition(
+                id = "widget_pipe_miter_saddle",
+                title = "Pipe Miter & Saddle Cut Template Generator",
+                description = "Generates 2D wrap-around templates for pipe-to-pipe tee joints, 90° saddles, and angular branch intersections",
+                category = "Metalworks",
+                iconName = "Architecture",
+                defaultSpan = 2,
+                keywords = listOf("pipe miter", "saddle cut", "wrap-around template", "tee joint", "branch intersection", "layout")
+            ),
+            ToolDefinition(
+                id = "widget_pipe_rolling_offset",
+                title = "Rolling Offset & 3D Pipe Travel Calculator",
+                description = "Computes true travel length and compound fitting angles for 3D rolling offsets across vertical rise and horizontal roll",
+                category = "Metalworks",
+                iconName = "Navigation",
+                defaultSpan = 2,
+                keywords = listOf("rolling offset", "3D pipe", "travel length", "compound fitting", "vertical rise", "horizontal roll")
+            ),
+            ToolDefinition(
+                id = "widget_pipe_flange_pcd",
+                title = "Pipe Flange Bolt Hole Circle (PCD) Generator",
+                description = "Calculates exact (X, Y) chord distances and coordinates for drilling evenly spaced bolt patterns on flanges and end-caps",
+                category = "Metalworks",
+                iconName = "GridOn",
+                defaultSpan = 2,
+                keywords = listOf("PCD", "bolt circle", "flange", "XY coordinates", "chord distance", "bolt pattern")
+            ),
+            ToolDefinition(
+                id = "widget_pipe_orange_peel",
+                title = "Orange Peel / Bullnose Pipe Cap Layout",
+                description = "Flat pattern calculator for cutting wedge petals on pipe ends to form welded domed end-caps",
+                category = "Metalworks",
+                iconName = "CheckCircle",
+                defaultSpan = 2,
+                keywords = listOf("orange peel", "bullnose", "pipe cap", "wedge petals", "domed end")
+            ),
+            ToolDefinition(
+                id = "widget_metal_thermal_distortion",
+                title = "Thermal Shrinkage & Distortion Compensator",
+                description = "Predicts angular distortion on single-V and double-V butt welds to establish proper pre-setting or clamping angles",
+                category = "Metalworks",
+                iconName = "Science",
+                defaultSpan = 2,
+                keywords = listOf("thermal shrinkage", "distortion", "angular distortion", "butt weld", "pre-setting", "clamping angle")
+            ),
+            ToolDefinition(
+                id = "widget_metal_structural_profiles",
+                title = "Structural Steel Profile Section Lookup",
+                description = "Dimensional, weight, and section modulus (Z) table for universal beams (UB/UC), HSS/RHS/SHS, angle iron, and channels",
+                category = "Metalworks",
+                iconName = "HomeWork",
+                defaultSpan = 2,
+                keywords = listOf("structural steel", "universal beam", "UB", "UC", "HSS", "RHS", "SHS", "angle iron", "channel", "section modulus", "Z")
+            ),
+            ToolDefinition(
+                id = "widget_metal_plasma_cutting",
+                title = "Plasma & Oxy-Fuel Cutting Chart",
+                description = "Recommends cutting tip orifice sizes, oxygen/acetylene pressures, standoff heights, and cutting travel speeds",
+                category = "Metalworks",
+                iconName = "FlashOn",
+                defaultSpan = 2,
+                keywords = listOf("plasma cutting", "oxy-fuel", "cutting tip", "orifice", "acetylene pressure", "standoff", "travel speed")
+            ),
+            ToolDefinition(
+                id = "widget_metal_flame_straightening",
+                title = "Flame Straightening & Spot Heating Guide",
+                description = "Visual instructional guide on placing heat triangles, line heats, and wedge heats to pull warped structural beams true",
+                category = "Metalworks",
+                iconName = "Engineering",
+                defaultSpan = 2,
+                keywords = listOf("flame straightening", "spot heating", "heat triangle", "line heat", "wedge heat", "warp correction")
+            ),
+            ToolDefinition(
+                id = "widget_weld_fillet_throat",
+                title = "Fillet Weld Leg to Throat Sizer",
+                description = "Converts between theoretical throat thickness, effective throat, and leg length for quality inspection",
+                category = "Metalworks",
+                iconName = "Straighten",
+                defaultSpan = 2,
+                keywords = listOf("fillet weld", "throat thickness", "effective throat", "leg length", "AWS", "inspection")
+            ),
+            ToolDefinition(
+                id = "widget_weld_defects",
+                title = "Weld Defect & Acceptance Guide (AWS D1.1)",
+                description = "Photographic reference for diagnosing porosity, undercut, lack of fusion, cold lap, and convexity against code tolerances",
+                category = "Metalworks",
+                iconName = "CheckCircle",
+                defaultSpan = 2,
+                keywords = listOf("weld defect", "AWS D1.1", "ISO 5817", "porosity", "undercut", "lack of fusion", "cold lap", "convexity")
+            ),
+            ToolDefinition(
+                id = "widget_weld_symbol_decoder",
+                title = "Welding Symbol Blueprint Decoder",
+                description = "Interactive visual builder and reference guide explaining reference lines, arrows, weld types, pitch spacing, and NDE callouts",
+                category = "Metalworks",
+                iconName = "Architecture",
+                defaultSpan = 2,
+                keywords = listOf("welding symbol", "blueprint decoder", "reference line", "arrow", "groove weld", "pitch spacing", "NDE")
+            ),
+            ToolDefinition(
+                id = "widget_weld_schaeffler",
+                title = "Ferrite Number & Schaeffler Diagram Tool",
+                description = "Calculates duplex and austenitic stainless steel weld ferrite content from nickel and chromium equivalents to avoid hot cracking",
+                category = "Metalworks",
+                iconName = "Science",
+                defaultSpan = 2,
+                keywords = listOf("ferrite number", "FN", "Schaeffler diagram", "duplex", "austenitic", "stainless steel", "hot cracking")
+            ),
+            ToolDefinition(
+                id = "widget_metal_surface_flatness",
+                title = "Surface Plate Flatness Multi-Point Map",
+                description = "Allows fabricators to input dial indicator readings across a grid to map workshop table warpage and anvil flatness",
+                category = "Metalworks",
+                iconName = "GridOn",
+                defaultSpan = 2,
+                keywords = listOf("surface plate", "anvil", "flatness map", "dial indicator", "grid warpage", "table calibration")
+            ),
+            ToolDefinition(
+                id = "widget_weld_tungsten_grind",
+                title = "Tungsten Electrode Grind & Color Table",
+                description = "Guide for selecting electrode alloy (2% Thoriated, Ceriated, Lanthanated, Pure) and grinding taper angle for GTAW",
+                category = "Metalworks",
+                iconName = "Palette",
+                defaultSpan = 2,
+                keywords = listOf("tungsten electrode", "grind geometry", "thoriated", "ceriated", "lanthanated", "GTAW", "DCEN", "AC")
+            ),
+            ToolDefinition(
+                id = "widget_pipe_hydro_test",
+                title = "Hydrostatic Test & Wall Hoop Stress Sizer",
+                description = "Computes safe hydro-test pressures for fabricated tanks and pipes based on ASME Section VIII allowable stresses and joint efficiency",
+                category = "Metalworks",
+                iconName = "WaterDrop",
+                defaultSpan = 2,
+                keywords = listOf("hydrostatic test", "pressure", "hoop stress", "ASME", "allowable stress", "joint efficiency", "wall thickness")
+            ),
+            ToolDefinition(
+                id = "widget_ir_remote",
+                title = "Jobsite & Commercial IR Remote",
+                description = "Hardware IR transmitter for 60+ brands of AC, TV, Projector, Satellite & AV receivers",
+                category = "Sensors",
+                iconName = "SettingsRemote",
+                defaultSpan = 2,
+                keywords = listOf("ir remote", "infrared", "ac", "tv", "projector", "satellite", "av", "dyson", "gree", "daikin", "samsung")
+            ),
+            ToolDefinition(
+                id = "widget_outdoor_activities",
+                title = "Outdoor Activities & Topo Suite",
+                description = "Vector topo map engine (10m/50m contours), dual-dial compass, barometric altimeter, survival & WFA",
+                category = "Outdoor Activities",
+                iconName = "Terrain",
+                defaultSpan = 2,
+                keywords = listOf("outdoor", "topo", "compass", "contour", "mbtiles", "expedition", "survival", "altimeter", "avalanche", "sos")
+            ),
+            ToolDefinition(
+                id = "widget_usb_pro_camera",
+                title = "USB Full-Screen Pro Camera",
+                description = "Full-screen high-definition USB camera viewer supporting snapshot capture, video recording, clip playback, and wired/wireless connection modes.",
+                category = "Sensors",
+                iconName = "Camera",
+                defaultSpan = 2,
+                keywords = listOf("usb camera", "borescope", "endoscope", "full screen", "screenshot", "record video", "playback", "wireless", "wired")
+            ),
+            ToolDefinition(
+                id = "widget_qr_code_scanner",
+                title = "Instant QR Code Scanner",
+                description = "Instantly scan QR codes to translate text, load web links, or open dedicated on-device apps with trade routing suggestions.",
+                category = "Sensors",
+                iconName = "Explore",
+                defaultSpan = 2,
+                keywords = listOf("qr code", "barcode", "scan", "translate", "url", "open apps", "instant scanner")
             ),
             ToolDefinition(
                 id = "widget_settings",

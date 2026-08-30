@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.screens.dashboard.DashboardViewModel
+import com.example.ui.utils.AppLocalization
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -41,6 +43,9 @@ fun WelcomeScreen(
     var selectedUnits by remember { mutableStateOf("Imperial") }
     var selectedPrecision by remember { mutableStateOf("1/16\"") }
     var selectedProfile by remember { mutableStateOf("General") }
+
+    val userSettings by viewModel.userSettings.collectAsStateWithLifecycle()
+    val isIndonesian = userSettings.languageCode == "id"
 
     val context = LocalContext.current
 
@@ -66,7 +71,7 @@ fun WelcomeScreen(
                                 .testTag("welcome_back_button")
                                 .minimumInteractiveComponentSize()
                         ) {
-                            Text("Back")
+                            Text(AppLocalization.t("btn_back", isIndonesian))
                         }
                     } else {
                         Spacer(modifier = Modifier.width(80.dp))
@@ -111,7 +116,7 @@ fun WelcomeScreen(
                             .testTag("welcome_next_button")
                             .minimumInteractiveComponentSize()
                     ) {
-                        Text(if (currentPage == totalPages) "Get Started" else "Next")
+                        Text(if (currentPage == totalPages) AppLocalization.t("btn_get_started", isIndonesian) else AppLocalization.t("btn_next", isIndonesian))
                     }
                 }
             }
@@ -146,19 +151,22 @@ fun WelcomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     when (page) {
-                        1 -> IntroPage()
+                        1 -> IntroPage(isIndonesian)
                         2 -> TermsPage(
+                            isIndonesian = isIndonesian,
                             isTermsAccepted = isTermsAccepted,
                             onTermsAcceptedChange = { isTermsAccepted = it }
                         )
-                        3 -> PermissionsPage()
+                        3 -> PermissionsPage(isIndonesian)
                         4 -> SettingsPage(
+                            isIndonesian = isIndonesian,
                             selectedUnits = selectedUnits,
                             onUnitsChange = { selectedUnits = it },
                             selectedPrecision = selectedPrecision,
                             onPrecisionChange = { selectedPrecision = it }
                         )
                         5 -> ProfilePage(
+                            isIndonesian = isIndonesian,
                             selectedProfile = selectedProfile,
                             onProfileChange = { selectedProfile = it }
                         )
@@ -170,7 +178,7 @@ fun WelcomeScreen(
 }
 
 @Composable
-fun IntroPage() {
+fun IntroPage(isIndonesian: Boolean) {
     Icon(
         imageVector = Icons.Default.Construction,
         contentDescription = null,
@@ -181,7 +189,7 @@ fun IntroPage() {
     )
 
     Text(
-        text = "Brillian Tools Suite",
+        text = AppLocalization.t("welcome_title", isIndonesian),
         style = MaterialTheme.typography.headlineLarge,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
@@ -190,7 +198,7 @@ fun IntroPage() {
     )
 
     Text(
-        text = "The ultimate trade utility handbook built right into your pocket.",
+        text = AppLocalization.t("welcome_subtitle", isIndonesian),
         style = MaterialTheme.typography.titleMedium,
         textAlign = TextAlign.Center,
         color = MaterialTheme.colorScheme.onBackground,
@@ -212,18 +220,18 @@ fun IntroPage() {
         ) {
             IntroBullet(
                 icon = Icons.Default.GridOn,
-                title = "Adaptive Tool Workspace",
-                description = "Over 50+ calculation tools organized dynamically for your trade."
+                title = AppLocalization.t("welcome_bullet1_title", isIndonesian),
+                description = AppLocalization.t("welcome_bullet1_desc", isIndonesian)
             )
             IntroBullet(
                 icon = Icons.Default.CloudQueue,
-                title = "Offline-First Sync Engine",
-                description = "Work completely offline in deep basement garages or remote sites. Syncs seamlessly whenever signal returns."
+                title = AppLocalization.t("welcome_bullet2_title", isIndonesian),
+                description = AppLocalization.t("welcome_bullet2_desc", isIndonesian)
             )
             IntroBullet(
                 icon = Icons.Default.History,
-                title = "Continuous Log Tracking",
-                description = "Keep records of your calculations, materials inventory, and job site notes automatically."
+                title = AppLocalization.t("welcome_bullet3_title", isIndonesian),
+                description = AppLocalization.t("welcome_bullet3_desc", isIndonesian)
             )
         }
     }
@@ -260,6 +268,7 @@ fun IntroBullet(icon: ImageVector, title: String, description: String) {
 
 @Composable
 fun TermsPage(
+    isIndonesian: Boolean,
     isTermsAccepted: Boolean,
     onTermsAcceptedChange: (Boolean) -> Unit
 ) {
@@ -273,14 +282,14 @@ fun TermsPage(
     )
 
     Text(
-        text = "Terms of Reference",
+        text = AppLocalization.t("welcome_terms_title", isIndonesian),
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
 
     Text(
-        text = "Please read and accept the following guidelines to proceed with installation.",
+        text = AppLocalization.t("welcome_terms_desc", isIndonesian),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -304,12 +313,7 @@ fun TermsPage(
                 .padding(16.dp)
         ) {
             Text(
-                text = "1. Calculations and Estimates:\n" +
-                        "This application provides estimation utilities, calculations, conversion formulas, and sensor readings for woodworking, civil engineering, electrical works, plumbing, and other construction-related trades. All computations are based on typical standard code formulas. \n\n" +
-                        "2. Professional Verification:\n" +
-                        "While we strive for extreme mathematical precision, values produced by these tools are for estimation purposes only. Users must verify all critical building structural dimensions, safety margins, load constraints, and electrical codes with professional plans and official code guidelines.\n\n" +
-                        "3. Sensor Accuracy:\n" +
-                        "Sensor features (e.g. altimeter, compass, decibel level, leveler) rely directly on hardware sensors on your mobile device. Accuracy may vary depending on environmental magnetic interference, temperature, and device hardware quality.",
+                text = AppLocalization.t("welcome_terms_body", isIndonesian),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
@@ -334,7 +338,7 @@ fun TermsPage(
             modifier = Modifier.testTag("terms_checkbox")
         )
         Text(
-            text = "I accept the Terms of Reference and acknowledge that calculations should be verified on-site.",
+            text = AppLocalization.t("welcome_terms_checkbox", isIndonesian),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -342,7 +346,7 @@ fun TermsPage(
 }
 
 @Composable
-fun PermissionsPage() {
+fun PermissionsPage(isIndonesian: Boolean) {
     Icon(
         imageVector = Icons.Default.Security,
         contentDescription = null,
@@ -353,14 +357,14 @@ fun PermissionsPage() {
     )
 
     Text(
-        text = "Device Permissions",
+        text = AppLocalization.t("welcome_permissions_title", isIndonesian),
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
 
     Text(
-        text = "Brillian Tools utilizes modern device hardware to enhance calculations. Here is what we use:",
+        text = AppLocalization.t("welcome_permissions_desc", isIndonesian),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -381,18 +385,18 @@ fun PermissionsPage() {
         ) {
             PermissionRow(
                 icon = Icons.Default.LocationOn,
-                title = "Precise Location",
-                desc = "Required for live local meteorology, sun-path solar calculations, and barometric altimeter referencing."
+                title = AppLocalization.t("welcome_perm1_title", isIndonesian),
+                desc = AppLocalization.t("welcome_perm1_desc", isIndonesian)
             )
             PermissionRow(
                 icon = Icons.Default.PhotoCamera,
-                title = "Camera & AR Depth",
-                desc = "Used by AR measurement tools, plumbing level viewfinder overlays, and barcode inventory logging."
+                title = AppLocalization.t("welcome_perm2_title", isIndonesian),
+                desc = AppLocalization.t("welcome_perm2_desc", isIndonesian)
             )
             PermissionRow(
                 icon = Icons.Default.Mic,
-                title = "Microphone Sensor",
-                desc = "Feeds the Decibel Sound Meter and acoustic engine diagnostics for machinery vibration."
+                title = AppLocalization.t("welcome_perm3_title", isIndonesian),
+                desc = AppLocalization.t("welcome_perm3_desc", isIndonesian)
             )
         }
     }
@@ -436,6 +440,7 @@ fun PermissionRow(icon: ImageVector, title: String, desc: String) {
 
 @Composable
 fun SettingsPage(
+    isIndonesian: Boolean,
     selectedUnits: String,
     onUnitsChange: (String) -> Unit,
     selectedPrecision: String,
@@ -451,14 +456,14 @@ fun SettingsPage(
     )
 
     Text(
-        text = "Measurement Settings",
+        text = AppLocalization.t("welcome_settings_title", isIndonesian),
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
 
     Text(
-        text = "Configure preferred standards for the calculations. You can change this in settings anytime.",
+        text = AppLocalization.t("welcome_settings_desc", isIndonesian),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -467,7 +472,7 @@ fun SettingsPage(
     Spacer(modifier = Modifier.height(16.dp))
 
     Text(
-        text = "Preferred Unit System",
+        text = AppLocalization.t("welcome_unit_system", isIndonesian),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Start,
@@ -498,12 +503,12 @@ fun SettingsPage(
                     tint = if (selectedUnits == "Imperial") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Imperial",
+                    text = AppLocalization.t("welcome_imperial_label", isIndonesian),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 Text(
-                    text = "Inches, Feet, Yards, Lbs",
+                    text = AppLocalization.t("welcome_imperial_desc", isIndonesian),
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center
                 )
@@ -530,12 +535,12 @@ fun SettingsPage(
                     tint = if (selectedUnits == "Metric") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Metric",
+                    text = AppLocalization.t("welcome_metric_label", isIndonesian),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 Text(
-                    text = "Millimeters, Meters, Kg",
+                    text = AppLocalization.t("welcome_metric_desc", isIndonesian),
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center
                 )
@@ -546,7 +551,7 @@ fun SettingsPage(
     Spacer(modifier = Modifier.height(16.dp))
 
     Text(
-        text = "Tape Measurement Precision",
+        text = AppLocalization.t("welcome_precision_title", isIndonesian),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Start,
@@ -573,6 +578,7 @@ fun SettingsPage(
 
 @Composable
 fun ProfilePage(
+    isIndonesian: Boolean,
     selectedProfile: String,
     onProfileChange: (String) -> Unit
 ) {
@@ -586,14 +592,14 @@ fun ProfilePage(
     )
 
     Text(
-        text = "Choose Your Workspace Profile",
+        text = AppLocalization.t("welcome_profile_title", isIndonesian),
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center
     )
 
     Text(
-        text = "We will pre-pin the most critical calculation utilities based on your daily job desk. You can customize this later anytime from the Tool Catalog.",
+        text = AppLocalization.t("welcome_profile_desc", isIndonesian),
         style = MaterialTheme.typography.bodyMedium,
         textAlign = TextAlign.Center,
         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -602,12 +608,13 @@ fun ProfilePage(
     Spacer(modifier = Modifier.height(8.dp))
 
     val profiles = listOf(
-        ProfileOption("Woodworker", Icons.Default.Engineering, "Woodworker", "Woodworking & Carpentry", "Board estimation, cut-list optimization, stair templates, miter saw angles, and moisture scales."),
-        ProfileOption("Civil Engineer", Icons.Default.Foundation, "Civil Engineer", "Excavation, Concrete & Grades", "Concrete volumes, earthwork cut/fills, grade, stormwater runoff calculation, and aggregate sieves."),
-        ProfileOption("Electrician", Icons.Default.FlashOn, "Electrician", "Electrical & Wiring", "Ohm's law, voltage drops, conduit fill capacities, motor amperes, breaker panels, and battery sizers."),
-        ProfileOption("Mechanical", Icons.Default.PrecisionManufacturing, "Mechanical & HVAC", "Mechanical, HVAC & Piping", "Dew point, wet bulb, live thermodynamic refrigerant curves, duct velocity sizers, and rigging sling angles."),
-        ProfileOption("Painter", Icons.Default.Palette, "Painter & Coating Specialist", "Painting, Coating & Prep", "Coverage calculations, 2K mixing ratios, wet film thickness, dew points, and rust treatment."),
-        ProfileOption("General", Icons.Default.Build, "General Contractor", "General Maintenance & Handyman", "Drywall count, tiling, painting coverage, general measuring tools, and checklists.")
+        ProfileOption("Woodworker", Icons.Default.Engineering, AppLocalization.t("profile_woodworker_title", isIndonesian), AppLocalization.t("profile_woodworker_sub", isIndonesian), AppLocalization.t("profile_woodworker_desc", isIndonesian)),
+        ProfileOption("Civil Engineer", Icons.Default.Foundation, AppLocalization.t("profile_civil_title", isIndonesian), AppLocalization.t("profile_civil_sub", isIndonesian), AppLocalization.t("profile_civil_desc", isIndonesian)),
+        ProfileOption("Electrician", Icons.Default.FlashOn, AppLocalization.t("profile_electrician_title", isIndonesian), AppLocalization.t("profile_electrician_sub", isIndonesian), AppLocalization.t("profile_electrician_desc", isIndonesian)),
+        ProfileOption("Mechanical", Icons.Default.PrecisionManufacturing, AppLocalization.t("profile_mechanical_title", isIndonesian), AppLocalization.t("profile_mechanical_sub", isIndonesian), AppLocalization.t("profile_mechanical_desc", isIndonesian)),
+        ProfileOption("Painter", Icons.Default.Palette, AppLocalization.t("profile_painter_title", isIndonesian), AppLocalization.t("profile_painter_sub", isIndonesian), AppLocalization.t("profile_painter_desc", isIndonesian)),
+        ProfileOption("Metalworker", Icons.Default.LocalFireDepartment, AppLocalization.t("profile_metalworker_title", isIndonesian), AppLocalization.t("profile_metalworker_sub", isIndonesian), AppLocalization.t("profile_metalworker_desc", isIndonesian)),
+        ProfileOption("General", Icons.Default.Build, AppLocalization.t("profile_general_title", isIndonesian), AppLocalization.t("profile_general_sub", isIndonesian), AppLocalization.t("profile_general_desc", isIndonesian))
     )
 
     val context = LocalContext.current
@@ -708,20 +715,20 @@ fun ProfilePage(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "On-Device AI Copilot Download",
+                        text = AppLocalization.t("welcome_ai_title", isIndonesian),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
 
                 Text(
-                    text = "Activate an on-device local trade assistant model (GGUF weights). Run completely offline at jobsites with zero cellular delay.",
+                    text = AppLocalization.t("welcome_ai_desc", isIndonesian),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 if (downloadedModelId.isNullOrEmpty()) {
                     Text(
-                        text = "Status: No local weights downloaded yet.",
+                        text = AppLocalization.t("welcome_ai_no_weights", isIndonesian),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.error
@@ -735,7 +742,7 @@ fun ProfilePage(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Downloading & compiling weights... ${(downloadProgress * 100).toInt()}%",
+                                text = "${AppLocalization.t("welcome_ai_downloading", isIndonesian)} ${(downloadProgress * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -760,7 +767,7 @@ fun ProfilePage(
                         ) {
                             Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Download Qwen2.5 1.5B (920 MB)")
+                            Text(AppLocalization.t("welcome_ai_btn_download", isIndonesian))
                         }
                     }
                 } else {
@@ -787,7 +794,7 @@ fun ProfilePage(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "$modelName is ready on-device!",
+                                text = "$modelName ${AppLocalization.t("welcome_ai_ready", isIndonesian)}",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -804,7 +811,7 @@ fun ProfilePage(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Delete Active Model to Free Storage")
+                        Text(AppLocalization.t("welcome_ai_btn_delete", isIndonesian))
                     }
                 }
             }

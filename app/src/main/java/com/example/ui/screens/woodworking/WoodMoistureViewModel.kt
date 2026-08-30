@@ -10,20 +10,21 @@ import kotlinx.coroutines.launch
 
 data class WoodShrinkageSpecies(
     val name: String,
-    val totalTangentialPct: Double, // Green to 0% oven dry
-    val totalRadialPct: Double,     // Green to 0% oven dry
-    val fspPct: Double = 28.0,      // Fiber Saturation Point %
+    val totalTangentialPct: Double,
+    val totalRadialPct: Double,
+    val fspPct: Double = 28.0,
     val trRatio: Double,
-    val stabilityRating: String     // Excellent, Good, Moderate, Poor
+    val stabilityRating: String
 )
 
 enum class GrainOrientation {
-    FLATSAWN,     // Width shrinks tangentially (highest movement)
-    QUARTERSAWN,  // Width shrinks radially (most stable)
-    RIFTSAWN      // Intermediate (~45° growth rings)
+    FLATSAWN,
+    QUARTERSAWN,
+    RIFTSAWN
 }
 
 data class WoodMoistureUiState(
+    val isMetric: Boolean = false,
     val speciesList: List<WoodShrinkageSpecies> = listOf(
         WoodShrinkageSpecies("White Oak", 10.5, 5.6, 28.0, 1.88, "Good"),
         WoodShrinkageSpecies("Red Oak (Northern)", 8.6, 4.0, 28.0, 2.15, "Moderate"),
@@ -39,20 +40,20 @@ data class WoodMoistureUiState(
         WoodShrinkageSpecies("Hickory", 10.5, 7.0, 28.0, 1.50, "Moderate")
     ),
     val selectedSpecies: WoodShrinkageSpecies = WoodShrinkageSpecies("White Oak", 10.5, 5.6, 28.0, 1.88, "Good"),
-    
-    // Moisture Inputs
-    val initialMoisturePct: Double = 14.0,  // e.g. 14% air-dried or 28% green
-    val targetMoisturePct: Double = 8.0,    // e.g. 8% interior furniture, 6% heated home
+
+    val initialMoisturePct: Double = 14.0,
+    val targetMoisturePct: Double = 8.0,
     val initialWidthInches: Double = 8.0,
     val initialThicknessInches: Double = 1.0,
     val grainOrientation: GrainOrientation = GrainOrientation.FLATSAWN,
-    
-    // Outputs
+
     val moistureDeltaPct: Double = 6.0,
     val effectiveShrinkagePct: Double = 2.25,
-    val widthChangeInches: Double = -0.180, // Negative for shrinkage, positive for swelling
+    val widthChangeInches: Double = -0.180,
     val finalWidthInches: Double = 7.820,
     val finalWidthMm: Double = 198.6,
+    val widthChangeDisplay: String = "-0.180\" (-4.6 mm)",
+    val finalWidthDisplay: String = "7.820\" (198.6 mm)",
     val thicknessChangeInches: Double = -0.012,
     val finalThicknessInches: Double = 0.988,
     val warpingRiskAssessment: String = "Low cupping risk under steady interior climate"
@@ -69,6 +70,13 @@ class WoodMoistureViewModel(
         recalculateShrinkage()
     }
 
+    fun setUnitSystem(metric: Boolean) {
+        if (_uiState.value.isMetric != metric) {
+            _uiState.value = _uiState.value.copy(isMetric = metric)
+            recalculateShrinkage()
+        }
+    }
+
     fun selectSpecies(species: WoodShrinkageSpecies) {
         _uiState.value = _uiState.value.copy(selectedSpecies = species)
         recalculateShrinkage()
@@ -80,11 +88,14 @@ class WoodMoistureViewModel(
     }
 
     fun updateInputs(initialMC: Double, targetMC: Double, width: Double, thickness: Double) {
+        val wIn = if (_uiState.value.isMetric) width / 25.4 else width
+        val tIn = if (_uiState.value.isMetric) thickness / 25.4 else thickness
+
         _uiState.value = _uiState.value.copy(
             initialMoisturePct = initialMC.coerceIn(2.0, 60.0),
             targetMoisturePct = targetMC.coerceIn(2.0, 60.0),
-            initialWidthInches = width.coerceAtLeast(0.5),
-            initialThicknessInches = thickness.coerceAtLeast(0.1)
+            initialWidthInches = wIn.coerceAtLeast(0.01),
+            initialThicknessInches = tIn.coerceAtLeast(0.01)
         )
         recalculateShrinkage()
     }
@@ -94,54 +105,45 @@ class WoodMoistureViewModel(
         val fsp = s.selectedSpecies.fspPct
         val mInitial = s.initialMoisturePct.coerceAtMost(fsp)
         val mTarget = s.targetMoisturePct.coerceAtMost(fsp)
-        val deltaMC = mInitial - mTarget // positive means drying / shrinking
+        val deltaMC = mInitial - mTarget
 
-        // Tangential & Radial movement percentages
         val tangShrinkPct = s.selectedSpecies.totalTangentialPct * (deltaMC / fsp)
         val radShrinkPct = s.selectedSpecies.totalRadialPct * (deltaMC / fsp)
 
-        // Effective width & thickness shrinkage based on grain orientation
         val (widthShrinkPct, thickShrinkPct) = when (s.grainOrientation) {
             GrainOrientation.FLATSAWN -> Pair(tangShrinkPct, radShrinkPct)
             GrainOrientation.QUARTERSAWN -> Pair(radShrinkPct, tangShrinkPct)
             GrainOrientation.RIFTSAWN -> Pair((tangShrinkPct + radShrinkPct) / 2.0, (tangShrinkPct + radShrinkPct) / 2.0)
         }
 
-        val deltaWidth = -(s.initialWidthInches * (widthShrinkPct / 100.0))
-        val finalWidth = s.initialWidthInches + deltaWidth
-        val deltaThick = -(s.initialThicknessInches * (thickShrinkPct / 100.0))
-        val finalThick = s.initialThicknessInches + deltaThick
+        val deltaWidthIn = -(s.initialWidthInches * (widthShrinkPct / 100.0))
+        val finalWidthIn = s.initialWidthInches + deltaWidthIn
+        val deltaThickIn = -(s.initialThicknessInches * (thickShrinkPct / 100.0))
+        val finalThickIn = s.initialThicknessInches + deltaThickIn
+
+        val widthChangeDisp = if (s.isMetric) "%.1f mm".format(deltaWidthIn * 25.4) else "%.3f\"".format(deltaWidthIn)
+        val finalWidthDisp = if (s.isMetric) "%.1f mm".format(finalWidthIn * 25.4) else "%.3f\"".format(finalWidthIn)
 
         val risk = when {
             s.selectedSpecies.trRatio > 2.0 && s.grainOrientation == GrainOrientation.FLATSAWN ->
-                "High Cupping Risk: Wide flatsawn board with T/R ratio > 2.0. Allow breadboard ends or slotted fasteners."
+                "High Cupping Risk: Wide flatsawn board with T/R ratio > 2.0."
             s.grainOrientation == GrainOrientation.QUARTERSAWN ->
                 "Minimal Movement: Quartersawn orientation provides maximum dimensional stability."
             else ->
                 "Moderate Movement: Standard furniture allowance for seasonal expansion/contraction required."
         }
 
-        _uiState.value = _uiState.value.copy(
+        _uiState.value = s.copy(
             moistureDeltaPct = deltaMC,
             effectiveShrinkagePct = widthShrinkPct,
-            widthChangeInches = deltaWidth,
-            finalWidthInches = finalWidth,
-            finalWidthMm = finalWidth * 25.4,
-            thicknessChangeInches = deltaThick,
-            finalThicknessInches = finalThick,
+            widthChangeInches = deltaWidthIn,
+            finalWidthInches = finalWidthIn,
+            finalWidthMm = finalWidthIn * 25.4,
+            widthChangeDisplay = widthChangeDisp,
+            finalWidthDisplay = finalWidthDisp,
+            thicknessChangeInches = deltaThickIn,
+            finalThicknessInches = finalThickIn,
             warpingRiskAssessment = risk
         )
-    }
-
-    fun logMoisturePlan() {
-        val s = _uiState.value
-        viewModelScope.launch {
-            toolLogRepository.logToolActivity(
-                toolType = "WOODWORKING",
-                title = "Wood Moisture & Shrinkage",
-                summary = "${s.selectedSpecies.name} (${s.initialMoisturePct}% to ${s.targetMoisturePct}% MC): Width change ${String.format("%.3f", s.widthChangeInches)}\" (${s.grainOrientation.name})",
-                value = s.widthChangeInches
-            )
-        }
     }
 }

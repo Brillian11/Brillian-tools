@@ -202,7 +202,7 @@ class JobsiteIrRemoteViewModel(
                 val pattern = state.customRawPatternInput
                     .split("[,\\s]+".toRegex())
                     .filter { it.isNotBlank() }
-                    .map { it.trim().toInt() }
+                    .mapNotNull { it.trim().toIntOrNull() }
                     .toIntArray()
 
                 if (pattern.isNotEmpty()) {

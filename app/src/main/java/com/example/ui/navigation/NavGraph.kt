@@ -1,16 +1,54 @@
 package com.example.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Engineering
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Foundation
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PrecisionManufacturing
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -19,9 +57,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.ViewModelFactory
 import com.example.ui.components.BrillianTopAppBar
-import com.example.ui.screens.ai.BrillianAiFloatingAssistant
 import com.example.ui.screens.catalog.ToolCatalogScreen
 import com.example.ui.screens.civil.AggregateSieveScreen
+import com.example.ui.screens.outdoor.OutdoorActivitiesScreen
 import com.example.ui.screens.civil.AggregateSieveViewModel
 import com.example.ui.screens.civil.BeamDeflectionScreen
 import com.example.ui.screens.civil.BeamDeflectionViewModel
@@ -56,6 +94,10 @@ import com.example.ui.screens.civil.StormwaterRationalViewModel
 import com.example.ui.screens.welcome.WelcomeScreen
 import com.example.ui.screens.painting.PaintingCoatingStudioScreen
 import com.example.ui.screens.painting.PaintingCoatingStudioViewModel
+import com.example.ui.screens.metalworks.MetalworksStudioScreen
+import com.example.ui.screens.metalworks.MetalworksStudioViewModel
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.example.ui.screens.customize.CustomizeDashboardScreen
 import com.example.ui.screens.customize.CustomizeDashboardViewModel
 import com.example.ui.screens.dashboard.DashboardScreen
@@ -147,6 +189,10 @@ import com.example.ui.screens.sensors.ThermalCameraScreen
 import com.example.ui.screens.sensors.ThermalCameraViewModel
 import com.example.ui.screens.sensors.UsbEndoscopeScreen
 import com.example.ui.screens.sensors.UsbEndoscopeViewModel
+import com.example.ui.screens.sensors.UsbProCameraScreen
+import com.example.ui.screens.sensors.UsbProCameraViewModel
+import com.example.ui.screens.sensors.QrCodeScannerScreen
+import com.example.ui.screens.sensors.QrCodeScannerViewModel
 import com.example.ui.screens.sensors.VibrationAnalyzerScreen
 import com.example.ui.screens.sensors.VibrationAnalyzerViewModel
 import com.example.ui.screens.settings.AboutScreen
@@ -209,6 +255,7 @@ fun NavGraph(
     val isOnline by dashboardViewModel.isOnlineMode.collectAsState()
     val pendingSyncCount by dashboardViewModel.pendingSyncCount.collectAsState()
     val isSyncing by dashboardViewModel.isSyncing.collectAsState()
+    val isCopilotOpen by dashboardViewModel.isCopilotOpen.collectAsState()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: ScreenRoutes.Dashboard.route
@@ -304,9 +351,146 @@ fun NavGraph(
     }
 
     val userSettings by dashboardViewModel.userSettings.collectAsState()
+    var showWorkspaceProfileDialog by remember { mutableStateOf(false) }
+
+    val (profileTitle, profileIcon, profileDesc) = when (userSettings.workerProfile) {
+        "Woodworker" -> Triple("Woodworking & Carpentry Workspace", Icons.Default.Engineering, "Optimized for carpenters, cabinetry & cabinet makers.")
+        "Civil Engineer" -> Triple("Civil Engineering Workspace", Icons.Default.Foundation, "Optimized for concrete, grades, earthworks & drainage.")
+        "Electrician" -> Triple("Electrician & Wiring Workspace", Icons.Default.FlashOn, "Optimized for Ohm's law, voltage drops, conduit filling.")
+        "Mechanical" -> Triple("Mechanical, HVAC & Piping Workspace", Icons.Default.PrecisionManufacturing, "Optimized for Psychrometrics, refrigerant curves, duct sizers & piping.")
+        "Painter" -> Triple("Painting, Coating & Surface Prep Workspace", Icons.Default.Palette, "Optimized for paint coverage, 2K mixing ratios, wet film thickness, dew points, and rust treatment.")
+        else -> Triple("General Trade Workspace", Icons.Default.Build, "Standard tools for general contractors, handymen & maintenance.")
+    }
+
     // Read directly from repository value synchronously to avoid any flow collection/recomposition lag
     val isFirstLaunch = remember { actualFactory.settingsRepository.settings.value.isFirstLaunch }
-    val showTopBar = currentRoute != ScreenRoutes.Welcome.route
+    val isFullscreenRoute = currentRoute == ScreenRoutes.UsbProCamera.route || currentRoute.startsWith("tool_metalworks_studio")
+    val showTopBar = currentRoute != ScreenRoutes.Welcome.route && !isFullscreenRoute && !isCopilotOpen
+
+    if (showWorkspaceProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showWorkspaceProfileDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Workspace & Quick Guide",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    IconButton(
+                        onClick = { showWorkspaceProfileDialog = false },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Active Workspace Profile Card
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.65f)
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = profileIcon,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = profileTitle,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = profileDesc,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+                    }
+
+                    // New User Guide & Dashboard Hints Card
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Help,
+                                contentDescription = "Help",
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(24.dp).padding(top = 2.dp)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "New User Guide & Dashboard Hints",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "This dashboard shows your personalized trade tools. You can customize which tools are pinned by going to the 'Tool Catalog' (tap the grid icon in the top right corner).",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showWorkspaceProfileDialog = false
+                        navController.navigate(ScreenRoutes.Settings.route)
+                    }
+                ) {
+                    Text("Change Profile in Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWorkspaceProfileDialog = false }) {
+                    Text("Got it")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -319,6 +503,10 @@ fun NavGraph(
                     pendingSyncCount = pendingSyncCount,
                     isSyncing = isSyncing,
                     onSyncBadgeClick = { navController.navigate(ScreenRoutes.SyncQueue.route) },
+                    onProfileClick = if (currentRoute == ScreenRoutes.Dashboard.route) {
+                        { showWorkspaceProfileDialog = true }
+                    } else null,
+                    profileIcon = profileIcon,
                     onCustomizeClick = if (currentRoute == ScreenRoutes.Dashboard.route) {
                         { navController.navigate(ScreenRoutes.CustomizeDashboard.route) }
                     } else null,
@@ -331,7 +519,9 @@ fun NavGraph(
         },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        val isMetricSystem = userSettings.unitSystem == "Metric"
+        val effectivePadding = if (isFullscreenRoute) androidx.compose.foundation.layout.PaddingValues(0.dp) else innerPadding
+        Box(modifier = Modifier.fillMaxSize().padding(effectivePadding)) {
             NavHost(
                 navController = navController,
                 startDestination = if (isFirstLaunch) ScreenRoutes.Welcome.route else ScreenRoutes.Dashboard.route,
@@ -354,6 +544,8 @@ fun NavGraph(
                     factory = actualFactory,
                     onNavigateToTool = { toolId ->
                         val route = when (toolId) {
+                            "widget_usb_pro_camera", "tool_usb_pro_camera" -> ScreenRoutes.UsbProCamera.route
+                            "widget_qr_code_scanner" -> ScreenRoutes.QrCodeScanner.route
                             "widget_psychrometric" -> ScreenRoutes.Psychrometric.route
                             "widget_refrigerant" -> ScreenRoutes.Refrigerant.route
                             "widget_duct_sizer" -> ScreenRoutes.DuctSizer.route
@@ -425,7 +617,8 @@ fun NavGraph(
                             "widget_plumb_bob" -> ScreenRoutes.PlumbBob.route
                             "widget_stud_detector" -> ScreenRoutes.StudDetector.route
                             "widget_laser_measure" -> ScreenRoutes.LaserMeasure.route
-                            "widget_jobsite_ir_remote" -> ScreenRoutes.JobsiteIrRemote.route
+                            "widget_jobsite_ir_remote", "widget_ir_remote" -> ScreenRoutes.JobsiteIrRemote.route
+                            "widget_outdoor_activities" -> ScreenRoutes.OutdoorActivities.route
                             "widget_material_inventory" -> ScreenRoutes.MaterialInventory.route
                             "widget_tasks" -> ScreenRoutes.TaskChecklist.route
                             "widget_timer" -> ScreenRoutes.FocusTimer.route
@@ -433,10 +626,19 @@ fun NavGraph(
                             "widget_calculator" -> ScreenRoutes.Calculator.route
                             "widget_wood_species_studio" -> ScreenRoutes.WoodSpeciesStudio.route
                             "widget_painting_coating_studio" -> ScreenRoutes.PaintingCoatingStudio.route
+                            "widget_weld_heat_input", "widget_weld_carbon_equivalent", "widget_weld_electrode_selector",
+                            "widget_weld_deposition_estimator", "widget_weld_shielding_gas", "widget_metal_k_factor",
+                            "widget_metal_bend_deduction", "widget_metal_press_brake_tonnage", "widget_metal_cone_unfolder",
+                            "widget_metal_square_to_round", "widget_pipe_miter_saddle", "widget_pipe_rolling_offset",
+                            "widget_pipe_flange_pcd", "widget_pipe_orange_peel", "widget_metal_thermal_distortion",
+                            "widget_metal_structural_profiles", "widget_metal_plasma_cutting", "widget_metal_flame_straightening",
+                            "widget_weld_fillet_throat", "widget_weld_defects", "widget_weld_symbol_decoder",
+                            "widget_weld_schaeffler", "widget_metal_surface_flatness", "widget_weld_tungsten_grind",
+                            "widget_pipe_hydro_test" -> ScreenRoutes.MetalworksStudio.createRoute(toolId)
                             "widget_color_palette", "widget_color_tools" -> ScreenRoutes.ColorDevTools.route
                             "widget_notes" -> ScreenRoutes.QuickNotes.route
                             "widget_settings" -> ScreenRoutes.Settings.route
-                            else -> ScreenRoutes.ToolCatalog.route
+                            else -> if (toolId.startsWith("tool_") || toolId.startsWith("screen_")) toolId else ScreenRoutes.ToolCatalog.route
                         }
                         navController.navigate(route)
                     },
@@ -457,6 +659,8 @@ fun NavGraph(
                     viewModel = catalogCustomizeViewModel,
                     onLaunchTool = { toolId ->
                         val route = when (toolId) {
+                            "widget_usb_pro_camera" -> ScreenRoutes.UsbProCamera.route
+                            "widget_qr_code_scanner" -> ScreenRoutes.QrCodeScanner.route
                             "widget_psychrometric" -> ScreenRoutes.Psychrometric.route
                             "widget_refrigerant" -> ScreenRoutes.Refrigerant.route
                             "widget_duct_sizer" -> ScreenRoutes.DuctSizer.route
@@ -528,7 +732,8 @@ fun NavGraph(
                             "widget_plumb_bob" -> ScreenRoutes.PlumbBob.route
                             "widget_stud_detector" -> ScreenRoutes.StudDetector.route
                             "widget_laser_measure" -> ScreenRoutes.LaserMeasure.route
-                            "widget_jobsite_ir_remote" -> ScreenRoutes.JobsiteIrRemote.route
+                            "widget_jobsite_ir_remote", "widget_ir_remote" -> ScreenRoutes.JobsiteIrRemote.route
+                            "widget_outdoor_activities" -> ScreenRoutes.OutdoorActivities.route
                             "widget_material_inventory" -> ScreenRoutes.MaterialInventory.route
                             "widget_tasks" -> ScreenRoutes.TaskChecklist.route
                             "widget_timer" -> ScreenRoutes.FocusTimer.route
@@ -536,6 +741,15 @@ fun NavGraph(
                             "widget_calculator" -> ScreenRoutes.Calculator.route
                             "widget_wood_species_studio" -> ScreenRoutes.WoodSpeciesStudio.route
                             "widget_painting_coating_studio" -> ScreenRoutes.PaintingCoatingStudio.route
+                            "widget_weld_heat_input", "widget_weld_carbon_equivalent", "widget_weld_electrode_selector",
+                            "widget_weld_deposition_estimator", "widget_weld_shielding_gas", "widget_metal_k_factor",
+                            "widget_metal_bend_deduction", "widget_metal_press_brake_tonnage", "widget_metal_cone_unfolder",
+                            "widget_metal_square_to_round", "widget_pipe_miter_saddle", "widget_pipe_rolling_offset",
+                            "widget_pipe_flange_pcd", "widget_pipe_orange_peel", "widget_metal_thermal_distortion",
+                            "widget_metal_structural_profiles", "widget_metal_plasma_cutting", "widget_metal_flame_straightening",
+                            "widget_weld_fillet_throat", "widget_weld_defects", "widget_weld_symbol_decoder",
+                            "widget_weld_schaeffler", "widget_metal_surface_flatness", "widget_weld_tungsten_grind",
+                            "widget_pipe_hydro_test" -> ScreenRoutes.MetalworksStudio.createRoute(toolId)
                             "widget_color_palette", "widget_color_tools" -> ScreenRoutes.ColorDevTools.route
                             "widget_notes" -> ScreenRoutes.QuickNotes.route
                             "widget_settings" -> ScreenRoutes.Settings.route
@@ -568,36 +782,67 @@ fun NavGraph(
             // Woodworking Suite
             composable(ScreenRoutes.BoardFootage.route) {
                 val vm: BoardFootageViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 BoardFootageScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.CutlistOptimizer.route) {
                 val vm: CutlistOptimizerViewModel = viewModel(factory = actualFactory)
-                CutlistOptimizerScreen(viewModel = vm)
+                CutlistOptimizerScreen(
+                    viewModel = vm,
+                    onNavigateToAi = { prompt ->
+                        com.example.domain.agent.AiSessionBridge.startFreshSessionWithPrompt(
+                            title = "Cutlist: ${vm.activeProjectName.value}",
+                            prompt = prompt,
+                            autoSend = false
+                        )
+                        dashboardViewModel.setCopilotOpen(true)
+                        navController.navigate(ScreenRoutes.Dashboard.route) {
+                            popUpTo(ScreenRoutes.Dashboard.route) { inclusive = false }
+                        }
+                    }
+                )
             }
 
             composable(ScreenRoutes.StairLayout.route) {
                 val vm: StairLayoutViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 StairLayoutScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.RafterCalculator.route) {
                 val vm: RafterCalculatorViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 RafterCalculatorScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.CompoundMiter.route) {
                 val vm: CompoundMiterViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 CompoundMiterScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.WoodMoisture.route) {
                 val vm: WoodMoistureViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 WoodMoistureScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.JoinerySpacing.route) {
                 val vm: JoinerySpacingViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 JoinerySpacingScreen(viewModel = vm)
             }
 
@@ -608,6 +853,9 @@ fun NavGraph(
 
             composable(ScreenRoutes.Sagulator.route) {
                 val vm: SagulatorViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 SagulatorScreen(viewModel = vm)
             }
 
@@ -649,6 +897,9 @@ fun NavGraph(
 
             composable(ScreenRoutes.VoltageDrop.route) {
                 val vm: VoltageDropViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 VoltageDropScreen(viewModel = vm)
             }
 
@@ -705,26 +956,41 @@ fun NavGraph(
             // Maintenance, Plumbing & Housework Suite
             composable(ScreenRoutes.PipeSizing.route) {
                 val vm: PipeSizingViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 PipeSizingScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.HvacLoad.route) {
                 val vm: HvacLoadViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 HvacLoadScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.TileGrout.route) {
                 val vm: TileGroutViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 TileGroutScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.PaintCoverage.route) {
                 val vm: PaintCoverageViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 PaintCoverageScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.DrywallStud.route) {
                 val vm: DrywallStudViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 DrywallStudScreen(viewModel = vm)
             }
 
@@ -742,31 +1008,49 @@ fun NavGraph(
             // Civil Engineering, Earthwork & Masonry Suite
             composable(ScreenRoutes.ConcreteVolume.route) {
                 val vm: ConcreteVolumeViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 ConcreteVolumeScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.RebarEstimator.route) {
                 val vm: RebarEstimatorViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 RebarEstimatorScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.CutFillEarthwork.route) {
                 val vm: CutFillEarthworkViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 CutFillEarthworkScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.MasonryMortar.route) {
                 val vm: MasonryMortarViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 MasonryMortarScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.SlopeDrainage.route) {
                 val vm: SlopeDrainageViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 SlopeDrainageScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.SoilAsphalt.route) {
                 val vm: SoilAsphaltViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 SoilAsphaltScreen(viewModel = vm)
             }
 
@@ -812,11 +1096,17 @@ fun NavGraph(
 
             composable(ScreenRoutes.EquipmentHauling.route) {
                 val vm: EquipmentHaulingViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setMetric(isMetricSystem)
+                }
                 EquipmentHaulingScreen(viewModel = vm)
             }
 
             composable(ScreenRoutes.StormwaterRational.route) {
                 val vm: StormwaterRationalViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setMetric(isMetricSystem)
+                }
                 StormwaterRationalScreen(viewModel = vm)
             }
 
@@ -849,6 +1139,23 @@ fun NavGraph(
             composable(ScreenRoutes.UsbEndoscope.route) {
                 val vm: UsbEndoscopeViewModel = viewModel(factory = actualFactory)
                 UsbEndoscopeScreen(viewModel = vm)
+            }
+
+            composable(ScreenRoutes.UsbProCamera.route) {
+                val vm: UsbProCameraViewModel = viewModel(factory = actualFactory)
+                UsbProCameraScreen(
+                    viewModel = vm,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToTool = { route -> navController.navigate(route) }
+                )
+            }
+
+            composable(ScreenRoutes.QrCodeScanner.route) {
+                val vm: QrCodeScannerViewModel = viewModel(factory = actualFactory)
+                QrCodeScannerScreen(
+                    viewModel = vm,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
 
             composable(ScreenRoutes.VibrationAnalyzer.route) {
@@ -888,6 +1195,9 @@ fun NavGraph(
 
             composable(ScreenRoutes.ArAreaCalculator.route) {
                 val vm: ArAreaCalculatorViewModel = viewModel(factory = actualFactory)
+                LaunchedEffect(isMetricSystem) {
+                    vm.setUnitSystem(isMetricSystem)
+                }
                 ArAreaCalculatorScreen(viewModel = vm)
             }
 
@@ -936,6 +1246,12 @@ fun NavGraph(
                 JobsiteIrRemoteScreen(viewModel = vm)
             }
 
+            composable(ScreenRoutes.OutdoorActivities.route) {
+                OutdoorActivitiesScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
             // Inventory
             composable(ScreenRoutes.MaterialInventory.route) {
                 val vm: MaterialInventoryViewModel = viewModel(factory = actualFactory)
@@ -946,6 +1262,23 @@ fun NavGraph(
             composable(ScreenRoutes.PaintingCoatingStudio.route) {
                 val vm: PaintingCoatingStudioViewModel = viewModel(factory = actualFactory)
                 PaintingCoatingStudioScreen(viewModel = vm)
+            }
+
+            // Metalworks & Welding Studio
+            composable(
+                route = ScreenRoutes.MetalworksStudio.route,
+                arguments = listOf(navArgument("toolId") {
+                    type = NavType.StringType
+                    defaultValue = "widget_weld_heat_input"
+                })
+            ) { backStackEntry ->
+                val toolIdArg = backStackEntry.arguments?.getString("toolId") ?: "widget_weld_heat_input"
+                val vm: MetalworksStudioViewModel = viewModel(factory = actualFactory)
+                MetalworksStudioScreen(
+                    viewModel = vm,
+                    onNavigateBack = { navController.popBackStack() },
+                    initialToolId = toolIdArg
+                )
             }
 
             // Legacy Tools
@@ -980,32 +1313,7 @@ fun NavGraph(
             }
         }
 
-        // Floating Local AI Copilot Overlay (Brillian AI) - only available after welcome page
-        if (currentRoute != null && currentRoute != ScreenRoutes.Welcome.route) {
-            BrillianAiFloatingAssistant(
-                currentRoute = currentRoute,
-                isOnline = isOnline,
-                onNavigateToTool = { toolId ->
-                    val route = when (toolId) {
-                        "widget_concrete_volume", "concrete_volume" -> ScreenRoutes.ConcreteVolume.route
-                        "widget_voltage_drop", "voltage_drop" -> ScreenRoutes.VoltageDrop.route
-                        "widget_paint_coverage", "paint_coverage", "tool_painting_coating_studio" -> ScreenRoutes.PaintingCoatingStudio.route
-                        "widget_board_footage", "board_footage" -> ScreenRoutes.BoardFootage.route
-                        "widget_sagulator", "sagulator" -> ScreenRoutes.Sagulator.route
-                        "widget_cutlist_optimizer", "cutlist_optimizer" -> ScreenRoutes.CutlistOptimizer.route
-                        "widget_tasks" -> ScreenRoutes.TaskChecklist.route
-                        "widget_timer" -> ScreenRoutes.FocusTimer.route
-                        "widget_unit_converter" -> ScreenRoutes.UnitConverter.route
-                        "widget_calculator" -> ScreenRoutes.Calculator.route
-                        else -> {
-                            if (toolId.startsWith("widget_") || toolId.startsWith("tool_")) toolId else ScreenRoutes.Dashboard.route
-                        }
-                    }
-                    navController.navigate(route)
-                },
-                modifier = Modifier.align(Alignment.BottomEnd)
-            )
-        }
+
     }
 }
 }

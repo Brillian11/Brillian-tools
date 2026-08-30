@@ -21,7 +21,12 @@ data class UserSettings(
     val isFirstLaunch: Boolean = true,
     val workerProfile: String = "General",
     val laborCostPerHour: Double = 25.0,
-    val currencyCode: String = "USD"
+    val currencyCode: String = "USD",
+    val aiEnabled: Boolean = true,
+    val aiProvider: String = "Gemini", // Gemini or DeepSeek
+    val aiApiKey: String = "",
+    val aiModel: String = "gemini-2.0-flash",
+    val languageCode: String = "en" // "en" or "id"
 )
 
 class SettingsRepository(context: Context) {
@@ -32,6 +37,11 @@ class SettingsRepository(context: Context) {
     val settings: StateFlow<UserSettings> = _settings.asStateFlow()
 
     private fun loadSettings(): UserSettings {
+        var rawModel = prefs.getString("ai_model", "gemini-2.0-flash") ?: "gemini-2.0-flash"
+        if (rawModel.contains("gemini-3.5")) {
+            rawModel = "gemini-2.0-flash"
+            prefs.edit().putString("ai_model", rawModel).apply()
+        }
         return UserSettings(
             isLightMode = prefs.getBoolean("is_light_mode", true),
             highContrastOutdoor = prefs.getBoolean("high_contrast_outdoor", true),
@@ -47,8 +57,18 @@ class SettingsRepository(context: Context) {
             isFirstLaunch = prefs.getBoolean("is_first_launch", true),
             workerProfile = prefs.getString("worker_profile", "General") ?: "General",
             laborCostPerHour = prefs.getFloat("labor_cost_per_hour", 25.0f).toDouble(),
-            currencyCode = prefs.getString("currency_code", "USD") ?: "USD"
+            currencyCode = prefs.getString("currency_code", "USD") ?: "USD",
+            aiEnabled = prefs.getBoolean("ai_enabled", true),
+            aiProvider = prefs.getString("ai_provider", "Gemini") ?: "Gemini",
+            aiApiKey = prefs.getString("ai_api_key", "") ?: "",
+            aiModel = rawModel,
+            languageCode = prefs.getString("language_code", "en") ?: "en"
         )
+    }
+
+    fun updateLanguageCode(code: String) {
+        prefs.edit().putString("language_code", code).apply()
+        _settings.value = _settings.value.copy(languageCode = code)
     }
 
     fun completeOnboarding(profile: String, units: String) {
@@ -121,5 +141,25 @@ class SettingsRepository(context: Context) {
     fun updateCurrencyCode(code: String) {
         prefs.edit().putString("currency_code", code).apply()
         _settings.value = _settings.value.copy(currencyCode = code)
+    }
+
+    fun updateAiEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("ai_enabled", enabled).apply()
+        _settings.value = _settings.value.copy(aiEnabled = enabled)
+    }
+
+    fun updateAiProvider(provider: String) {
+        prefs.edit().putString("ai_provider", provider).apply()
+        _settings.value = _settings.value.copy(aiProvider = provider)
+    }
+
+    fun updateAiApiKey(apiKey: String) {
+        prefs.edit().putString("ai_api_key", apiKey).apply()
+        _settings.value = _settings.value.copy(aiApiKey = apiKey)
+    }
+
+    fun updateAiModel(model: String) {
+        prefs.edit().putString("ai_model", model).apply()
+        _settings.value = _settings.value.copy(aiModel = model)
     }
 }

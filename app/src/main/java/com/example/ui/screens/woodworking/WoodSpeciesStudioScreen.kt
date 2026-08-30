@@ -38,6 +38,13 @@ fun WoodSpeciesStudioScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        com.example.ui.components.ToolInfoBox(
+            icon = Icons.Default.MenuBook,
+            title = "Wood Species & Physical Properties",
+            description = "Physical properties library, hardness (Janka), volumetric shrinkage coefficients, lumber drying schedules, and preservation guides.",
+            modifier = Modifier.padding(16.dp)
+        )
+
         // Tab Row to navigate the Studio segments
         TabRow(
             selectedTabIndex = activeSubTab,

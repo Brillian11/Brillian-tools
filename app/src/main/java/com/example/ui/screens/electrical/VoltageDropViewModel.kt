@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlin.math.sqrt
 
 enum class ConductorMaterial(val kFactor: Double, val label: String) {
     COPPER(12.9, "Copper (Cu, K=12.9)"),
@@ -27,42 +26,36 @@ data class WireGaugeSpec(
 )
 
 data class VoltageDropUiState(
+    val isMetric: Boolean = false,
     val material: ConductorMaterial = ConductorMaterial.COPPER,
     val phaseSystem: PhaseSystem = PhaseSystem.SINGLE_PHASE_2W,
     val sourceVoltageV: Double = 120.0,
     val loadCurrentA: Double = 15.0,
     val oneWayDistanceFt: Double = 100.0,
-    val selectedWireIndex: Int = 3, // #12 AWG default
+    val selectedWireIndex: Int = 1,
 
-    // Calculated Outputs
     val voltageDropV: Double = 3.63,
     val percentageDrop: Double = 3.03,
     val voltageAtLoadV: Double = 116.37,
     val powerLossWatts: Double = 54.45,
-    val isNecCompliant3Percent: Boolean = false,
+    val distanceDisplay: String = "100.0 ft (30.5 m)",
+    val isNecCompliant3Percent: Boolean = true,
     val isNecCompliant5Percent: Boolean = true,
-    val recommendedWireIndex: Int = 4, // Next size up if non-compliant
-    val recommendedWireName: String = "10 AWG"
+    val recommendedWireIndex: Int = 1,
+    val recommendedWireName: String = "12 AWG (3.3 mm²)"
 ) {
     companion object {
         val WIRE_SPECS = listOf(
-            WireGaugeSpec("14 AWG", 4110.0, 2.08, 15),
-            WireGaugeSpec("12 AWG", 6530.0, 3.31, 20),
-            WireGaugeSpec("10 AWG", 10380.0, 5.26, 30),
-            WireGaugeSpec("8 AWG", 16510.0, 8.37, 50),
-            WireGaugeSpec("6 AWG", 26240.0, 13.3, 65),
-            WireGaugeSpec("4 AWG", 41740.0, 21.2, 85),
-            WireGaugeSpec("3 AWG", 52620.0, 26.7, 100),
-            WireGaugeSpec("2 AWG", 66360.0, 33.6, 115),
-            WireGaugeSpec("1 AWG", 83690.0, 42.4, 130),
-            WireGaugeSpec("1/0 AWG", 105600.0, 53.5, 150),
-            WireGaugeSpec("2/0 AWG", 133100.0, 67.4, 175),
-            WireGaugeSpec("3/0 AWG", 167800.0, 85.0, 200),
-            WireGaugeSpec("4/0 AWG", 211600.0, 107.0, 230),
-            WireGaugeSpec("250 kcmil", 250000.0, 127.0, 255),
-            WireGaugeSpec("300 kcmil", 300000.0, 152.0, 285),
-            WireGaugeSpec("350 kcmil", 350000.0, 177.0, 310),
-            WireGaugeSpec("500 kcmil", 500000.0, 253.0, 380)
+            WireGaugeSpec("14 AWG (2.08 mm²)", 4110.0, 2.08, 15),
+            WireGaugeSpec("12 AWG (3.31 mm²)", 6530.0, 3.31, 20),
+            WireGaugeSpec("10 AWG (5.26 mm²)", 10380.0, 5.26, 30),
+            WireGaugeSpec("8 AWG (8.37 mm²)", 16510.0, 8.37, 50),
+            WireGaugeSpec("6 AWG (13.3 mm²)", 26240.0, 13.3, 65),
+            WireGaugeSpec("4 AWG (21.2 mm²)", 41740.0, 21.2, 85),
+            WireGaugeSpec("2 AWG (33.6 mm²)", 66360.0, 33.6, 115),
+            WireGaugeSpec("1/0 AWG (53.5 mm²)", 105600.0, 53.5, 150),
+            WireGaugeSpec("2/0 AWG (67.4 mm²)", 133100.0, 67.4, 175),
+            WireGaugeSpec("4/0 AWG (107 mm²)", 211600.0, 107.0, 230)
         )
     }
 }
@@ -76,6 +69,13 @@ class VoltageDropViewModel(
 
     init {
         recalculate()
+    }
+
+    fun setUnitSystem(metric: Boolean) {
+        if (_uiState.value.isMetric != metric) {
+            _uiState.value = _uiState.value.copy(isMetric = metric)
+            recalculate()
+        }
     }
 
     fun setMaterial(mat: ConductorMaterial) {
@@ -95,11 +95,12 @@ class VoltageDropViewModel(
         }
     }
 
-    fun updateInputs(sourceV: Double, loadA: Double, distFt: Double) {
+    fun updateInputs(sourceV: Double, loadA: Double, dist: Double) {
+        val distFt = if (_uiState.value.isMetric) dist * 3.28084 else dist
         _uiState.value = _uiState.value.copy(
             sourceVoltageV = sourceV.coerceAtLeast(1.0),
             loadCurrentA = loadA.coerceAtLeast(0.1),
-            oneWayDistanceFt = distFt.coerceAtLeast(1.0)
+            oneWayDistanceFt = distFt.coerceAtLeast(0.1)
         )
         recalculate()
     }
@@ -111,51 +112,21 @@ class VoltageDropViewModel(
         val wire = VoltageDropUiState.WIRE_SPECS[s.selectedWireIndex]
         val cm = wire.circularMils
 
-        // Vdrop = (mult * K * I * L) / CM
         val vDrop = (mult * k * s.loadCurrentA * s.oneWayDistanceFt) / cm
         val pctDrop = (vDrop / s.sourceVoltageV) * 100.0
         val vLoad = (s.sourceVoltageV - vDrop).coerceAtLeast(0.0)
         val powerLoss = vDrop * s.loadCurrentA
 
-        val is3Pct = pctDrop <= 3.0
-        val is5Pct = pctDrop <= 5.0
+        val distStr = if (s.isMetric) "%.1f m".format(s.oneWayDistanceFt / 3.28084) else "%.1f ft".format(s.oneWayDistanceFt)
 
-        // Find minimum wire gauge to satisfy <= 3% drop
-        var recIndex = s.selectedWireIndex
-        for (i in VoltageDropUiState.WIRE_SPECS.indices) {
-            val testCm = VoltageDropUiState.WIRE_SPECS[i].circularMils
-            val testDrop = (mult * k * s.loadCurrentA * s.oneWayDistanceFt) / testCm
-            val testPct = (testDrop / s.sourceVoltageV) * 100.0
-            if (testPct <= 3.0 && VoltageDropUiState.WIRE_SPECS[i].ampacity75C >= s.loadCurrentA) {
-                recIndex = i
-                break
-            }
-        }
-        val recWireName = VoltageDropUiState.WIRE_SPECS[recIndex].name
-
-        _uiState.value = _uiState.value.copy(
+        _uiState.value = s.copy(
             voltageDropV = vDrop,
             percentageDrop = pctDrop,
             voltageAtLoadV = vLoad,
             powerLossWatts = powerLoss,
-            isNecCompliant3Percent = is3Pct,
-            isNecCompliant5Percent = is5Pct,
-            recommendedWireIndex = recIndex,
-            recommendedWireName = recWireName
+            distanceDisplay = distStr,
+            isNecCompliant3Percent = pctDrop <= 3.0,
+            isNecCompliant5Percent = pctDrop <= 5.0
         )
-    }
-
-    fun logVoltageDrop() {
-        val s = _uiState.value
-        val wire = VoltageDropUiState.WIRE_SPECS[s.selectedWireIndex]
-        val summary = "${wire.name} ${s.material.name} over ${s.oneWayDistanceFt}ft @ ${s.loadCurrentA}A: Drop = ${String.format("%.2f", s.voltageDropV)}V (${String.format("%.2f", s.percentageDrop)}%), Load = ${String.format("%.1f", s.voltageAtLoadV)}V"
-        viewModelScope.launch {
-            toolLogRepository.logToolActivity(
-                toolType = "ELECTRICAL",
-                title = "Voltage Drop Calculation",
-                summary = summary,
-                value = s.percentageDrop
-            )
-        }
     }
 }

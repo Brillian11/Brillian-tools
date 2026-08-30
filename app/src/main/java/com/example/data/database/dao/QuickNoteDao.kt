@@ -13,6 +13,9 @@ interface QuickNoteDao {
     @Query("SELECT * FROM quick_notes ORDER BY updatedAt DESC")
     fun getAllNotes(): Flow<List<QuickNoteEntity>>
 
+    @Query("SELECT * FROM quick_notes WHERE id = :noteId LIMIT 1")
+    suspend fun getNoteById(noteId: Long): QuickNoteEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNote(note: QuickNoteEntity): Long
 

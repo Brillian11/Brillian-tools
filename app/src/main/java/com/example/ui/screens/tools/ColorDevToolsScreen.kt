@@ -241,7 +241,7 @@ private fun SwatchesAndCalibrationTab(
         luminance = lum
     )
 
-    val brands = listOf("ALL", "Nippon Paint", "Mowilex", "Avitex", "Propan", "Dulux")
+    val brands = listOf("ALL", "Nippon Paint", "Mowilex", "Avitex", "Propan", "Dulux", "Danapaint Duco", "TACO HPL", "Decosheet", "TACO Vinyl", "Kertasive")
     val trades = listOf("ALL", "Woodworker", "House Work", "Building Work", "Technical Work")
 
     val filteredPaints = viewModel.paintCatalog.filter { paint ->
@@ -341,6 +341,89 @@ private fun SwatchesAndCalibrationTab(
                                     )
                             )
                         }
+                        "HPL Laminate" -> {
+                            // Render a elegant laminate matte sheen + parallel fine lines representing manufactured grain sheets
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.radialGradient(
+                                            listOf(
+                                                Color.White.copy(alpha = 0.12f),
+                                                Color.Transparent
+                                            ),
+                                            radius = 400f
+                                        )
+                                    )
+                            ) {
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val lines = 24
+                                    for (i in 0..lines) {
+                                        val y = size.height * (i.toFloat() / lines)
+                                        drawLine(
+                                            color = Color.Black.copy(alpha = 0.04f),
+                                            start = Offset(0f, y),
+                                            end = Offset(size.width, y + 5f),
+                                            strokeWidth = 1.5f
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        "Vinyl Plank" -> {
+                            // Render interlocking vinyl planks with dark thin joint lines and offset vertical joints
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                // Horizontal joints
+                                val rowCount = 3
+                                val rowHeight = size.height / rowCount
+                                for (i in 1 until rowCount) {
+                                    val y = i * rowHeight
+                                    drawLine(
+                                        color = Color.Black.copy(alpha = 0.25f),
+                                        start = Offset(0f, y),
+                                        end = Offset(size.width, y),
+                                        strokeWidth = 2.5f
+                                    )
+                                }
+                                // Staggered vertical joints
+                                for (row in 0 until rowCount) {
+                                    val yStart = row * rowHeight
+                                    val yEnd = yStart + rowHeight
+                                    val xOffset = if (row % 2 == 0) size.width * 0.4f else size.width * 0.7f
+                                    drawLine(
+                                        color = Color.Black.copy(alpha = 0.20f),
+                                        start = Offset(xOffset, yStart),
+                                        end = Offset(xOffset, yEnd),
+                                        strokeWidth = 2.0f
+                                    )
+                                    if (row % 2 != 0) {
+                                        val xOffset2 = size.width * 0.2f
+                                        drawLine(
+                                            color = Color.Black.copy(alpha = 0.20f),
+                                            start = Offset(xOffset2, yStart),
+                                            end = Offset(xOffset2, yEnd),
+                                            strokeWidth = 2.0f
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        "PVC Film" -> {
+                            // Thermoformed/wrapped PVC decorative vinyl sticker effect: smooth satin finish with soft border vignette highlights
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                                            listOf(
+                                                Color.White.copy(alpha = 0.15f),
+                                                Color.Transparent,
+                                                Color.Black.copy(alpha = 0.10f)
+                                            )
+                                        )
+                                    )
+                            )
+                        }
                     }
 
                     // Surface Tag & Lighting Tag
@@ -423,15 +506,17 @@ private fun SwatchesAndCalibrationTab(
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Wall Plaster", "Timber Grain", "Concrete Surface", "Gloss Metal").forEach { surf ->
+                    listOf("Wall Plaster", "Timber Grain", "Concrete Surface", "Gloss Metal", "HPL Laminate", "Vinyl Plank", "PVC Film").forEach { surf ->
                         FilterChip(
                             selected = state.selectedSurface == surf,
                             onClick = { viewModel.setSurface(surf) },
                             label = { Text(surf, style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.testTag("surface_chip_$surf")
                         )
                     }
                 }

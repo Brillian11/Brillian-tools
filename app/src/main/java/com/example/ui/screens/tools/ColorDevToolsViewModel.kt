@@ -185,6 +185,42 @@ class ColorDevToolsViewModel(
             accentName = "Avian Emergency Red Conduit (10%)",
             combinationRule = "ANSI Z535 / OSHA Hazard Identification",
             recommendation = "Dark steel machine bodies, high-visibility walkway lines, and emergency stop valves."
+        ),
+        TradePaletteCombination(
+            title = "TACO HPL Royal Oak & Charcoal Duco Luxury",
+            tradeCategory = "Woodworker",
+            dominantColorHex = "#B89063",
+            dominantName = "TACO HPL Royal Oak (60%)",
+            secondaryColorHex = "#1A1A1A",
+            secondaryName = "Danapaint Matte Black Duco (30%)",
+            accentColorHex = "#D4C5A1",
+            accentName = "Kertasive Champagne Gold (10%)",
+            combinationRule = "Modern Luxury Custom Cabinetry Combo",
+            recommendation = "Beautiful matte oak HPL drawers framed by black lacquered duco trims and champagne gold accent pulls."
+        ),
+        TradePaletteCombination(
+            title = "Minimalist Kertasive Wood & Steel Wrap",
+            tradeCategory = "Woodworker",
+            dominantColorHex = "#C99B66",
+            dominantName = "Kertasive Natural Oak Film (60%)",
+            secondaryColorHex = "#A1A4A6",
+            secondaryName = "Kertasive Brushed Steel Metallic (30%)",
+            accentColorHex = "#FFFFFF",
+            accentName = "Glossy Solid White (10%)",
+            combinationRule = "Thermoformed Interior Wrap Harmony",
+            recommendation = "Warm timber-wrapped wall panels, industrial brushed steel trims, and pure gloss white desks."
+        ),
+        TradePaletteCombination(
+            title = "TACO Walnut Flooring & Warm Cream Living",
+            tradeCategory = "House Work",
+            dominantColorHex = "#F0E8D9",
+            dominantName = "Decosheet Warm Cream Wall (60%)",
+            secondaryColorHex = "#5C4033",
+            secondaryName = "TACO Walnut Flooring Vinyl (30%)",
+            accentColorHex = "#964B38",
+            accentName = "Dulux Tuscan Clay Terracotta (10%)",
+            combinationRule = "60-30-10 Cozy Living Space Scheme",
+            recommendation = "Bright cream wrapped wall stickers, luxury rich walnut floor planks, and warm terracotta accent cushions."
         )
     )
 

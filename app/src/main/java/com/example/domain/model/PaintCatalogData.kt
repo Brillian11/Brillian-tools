@@ -129,7 +129,37 @@ object PaintCatalogRepository {
         PaintColorItem("Dulux", "30BB 11/151", "Slate Facade Grey", "#3D464D", "Exterior Facade", "Building Work", "Modern architectural facade dark grey", lrv = 20),
         PaintColorItem("Dulux", "10YY 35/196", "Wheatfield Natural", "#C4A47C", "Interior Wall", "House Work", "Natural organic wheat tone", lrv = 52),
         PaintColorItem("Dulux", "90BG 17/120", "Deep Ocean Accent", "#2C505E", "Feature Wall", "House Work", "High-contrast feature wall dark teal blue", lrv = 24),
-        PaintColorItem("Dulux", "10YR 13/383", "Tuscan Clay Terracotta", "#964B38", "Exterior Trim", "Building Work", "Rustic terracotta tile & brick accent", lrv = 28)
+        PaintColorItem("Dulux", "10YR 13/383", "Tuscan Clay Terracotta", "#964B38", "Exterior Trim", "Building Work", "Rustic terracotta tile & brick accent", lrv = 28),
+
+        // Danapaint Duco Paint
+        PaintColorItem("Danapaint Duco", "DUCO 101", "Gloss White NC", "#FFFFFF", "Duco Gloss Lacquer", "Woodworker", "High-grade nitrocellulose duco lacquer for high-end furniture spray painting", lrv = 95),
+        PaintColorItem("Danapaint Duco", "DUCO 202", "Super Matte Black NC", "#1A1A1A", "Duco Matte Lacquer", "Woodworker", "Nitrocellulose-based deep matte black duco spray paint for iron or wood trim", lrv = 5),
+        PaintColorItem("Danapaint Duco", "DUCO 305", "Emerald Green NC", "#0A5C36", "Duco High-Gloss", "Woodworker", "Rich emerald green duco paint for classic kitchen cabinets", lrv = 22),
+        PaintColorItem("Danapaint Duco", "DUCO 408", "Crimson Red NC", "#A81B24", "Duco Spray Enamel", "Technical Work", "Durable high-impact red nitrocellulose paint for automotive and structural steel", lrv = 18),
+        PaintColorItem("Danapaint Duco", "DUCO 512", "Satin Slate Grey NC", "#5E6366", "Duco Satin Lacquer", "Building Work", "Mid-grey satin lacquer for doors, trim, and kitchen cabinets", lrv = 34),
+
+        // TACO HPL (High Pressure Laminate)
+        PaintColorItem("TACO HPL", "TH 102 AA", "Teak Wood Matte", "#8C5E3B", "HPL Matte Woodgrain", "Woodworker", "Classic matte teak HPL for high-durability kitchen & wardrobe surfaces", lrv = 25),
+        PaintColorItem("TACO HPL", "TH 003 G", "Glossy Solid White", "#F8F9FA", "HPL Gloss Solid", "Woodworker", "Vibrant high-gloss solid white HPL for minimalist cabinets and office desks", lrv = 92),
+        PaintColorItem("TACO HPL", "TH 302 T", "Concrete Ash Textured", "#8E9294", "HPL Textured", "Building Work", "Textured raw cement HPL sheet for industrial accent wall panels", lrv = 42),
+        PaintColorItem("TACO HPL", "TH 505 G", "Nero Marquina Marble", "#222425", "HPL Gloss Marble", "Building Work", "Glossy deep black marble HPL with prominent white veining", lrv = 8),
+        PaintColorItem("TACO HPL", "TH 204 AA", "Royal Oak Matte", "#B89063", "HPL Matte Woodgrain", "Woodworker", "Warm golden oak HPL sheet for interior wardrobes and credenzas", lrv = 46),
+
+        // Decosheet (Laminated PVC Sticker)
+        PaintColorItem("Decosheet", "DS 201", "Ashwood Grain", "#E3DEC3", "Decosheet Woodgrain", "Woodworker", "Flexible lightweight PVC decorative vinyl sticker for indoor woodwork wrapping", lrv = 72),
+        PaintColorItem("Decosheet", "DS 104", "Matte Charcoal", "#303233", "Decosheet Solid", "Woodworker", "Flexible self-adhesive PVC film for wrapping furniture, frames, and trim", lrv = 12),
+        PaintColorItem("Decosheet", "DS 312", "Warm Cream Solid", "#F0E8D9", "Decosheet Solid", "House Work", "Smooth self-adhesive warm cream vinyl foil for cabinet interiors", lrv = 82),
+
+        // TACO Vinyl (Luxury Flooring/Cladding)
+        PaintColorItem("TACO Vinyl", "TV 203", "Walnut Flooring Plank", "#5C4033", "Vinyl Wood Plank", "House Work", "Luxury vinyl plank flooring for comfortable underfoot timber feel", lrv = 15),
+        PaintColorItem("TACO Vinyl", "TV 105", "Stone Grey Flooring Tile", "#73777A", "Vinyl Tile", "House Work", "Interlocking stone-look vinyl tile with water and wear resistance", lrv = 32),
+        PaintColorItem("TACO Vinyl", "TV 401", "Natural Pine Plank", "#D2B48C", "Vinyl Wood Plank", "House Work", "Light pine textured vinyl plank flooring for bright modern rooms", lrv = 54),
+
+        // Kertasive (Premium PVC Interior Film)
+        PaintColorItem("Kertasive", "K-W09", "Natural Oak Film", "#C99B66", "PVC Interior Film", "Woodworker", "Premium thermoformable self-adhesive interior film with realistic warm oak grain texture", lrv = 38),
+        PaintColorItem("Kertasive", "K-M51", "Brushed Steel Metallic", "#A1A4A6", "PVC Metallic Film", "Technical Work", "Brushed stainless steel effect interior film for high-end appliance wrapping", lrv = 40),
+        PaintColorItem("Kertasive", "K-L02", "Tan Leather Textured", "#B37446", "PVC Leather Film", "House Work", "Rich tan textured faux leather film for luxury wall paneling and headboards", lrv = 28),
+        PaintColorItem("Kertasive", "K-M18", "Champagne Gold Metallic", "#D4C5A1", "PVC Metallic Film", "Technical Work", "Soft metallic champagne gold film for interior accents and metal trim wrapping", lrv = 58)
     )
 
     fun hexToRgb(hex: String): Triple<Int, Int, Int> {

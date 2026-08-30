@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,11 +39,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import com.example.domain.model.ToolDefinition
 import com.example.ui.screens.customize.CustomizeDashboardViewModel
 import com.example.ui.utils.ToolIconMapper
+import kotlinx.coroutines.launch
 
 @Composable
 fun ToolCatalogScreen(
@@ -61,14 +65,47 @@ fun ToolCatalogScreen(
 ) {
     val allWidgets by viewModel.allWidgets.collectAsState()
 
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("ALL") }
+    val searchQuery by viewModel.catalogSearchQuery.collectAsState()
+    val selectedCategory by viewModel.catalogSelectedCategory.collectAsState()
 
-    val categories = listOf("ALL", "Woodworking", "Civil Engineering", "Sensors", "Inventory", "Tasks", "Focus", "Utility")
+    val coroutineScope = rememberCoroutineScope()
+
+    val categoryScrollState = rememberScrollState(initial = viewModel.catalogCategoryScrollOffset)
+    LaunchedEffect(categoryScrollState.value) {
+        viewModel.catalogCategoryScrollOffset = categoryScrollState.value
+    }
+
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.catalogScrollIndex,
+        initialFirstVisibleItemScrollOffset = viewModel.catalogScrollOffset
+    )
+
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        viewModel.catalogScrollIndex = listState.firstVisibleItemIndex
+        viewModel.catalogScrollOffset = listState.firstVisibleItemScrollOffset
+    }
+
+    val categories = listOf(
+        "ALL",
+        "Woodworking",
+        "Electrical",
+        "Civil Engineering",
+        "Sensors",
+        "Mechanical & HVAC",
+        "Plumbing & Maintenance",
+        "Safety & Compliance",
+        "Painting & Coating",
+        "Metalworks",
+        "Site & Field",
+        "Field Engineering",
+        "Inventory",
+        "Tasks",
+        "Focus",
+        "Utility"
+    )
 
     val filteredTools = ToolDefinition.ALL_TOOLS.filter { tool ->
-        val matchesQuery = tool.title.contains(searchQuery, ignoreCase = true) ||
-                tool.description.contains(searchQuery, ignoreCase = true)
+        val matchesQuery = tool.matchesSearch(searchQuery)
         val matchesCategory = selectedCategory == "ALL" || tool.category.equals(selectedCategory, ignoreCase = true)
         matchesQuery && matchesCategory
     }
@@ -80,18 +117,18 @@ fun ToolCatalogScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = "Modular Tool Suite Catalog",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
-
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Search Tools") },
+                onValueChange = { query ->
+                    viewModel.setCatalogSearchQuery(query)
+                    viewModel.catalogScrollIndex = 0
+                    viewModel.catalogScrollOffset = 0
+                    coroutineScope.launch { listState.scrollToItem(0) }
+                },
+                label = { Text("Search ${ToolDefinition.ALL_TOOLS.size} Tools") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().testTag("catalog_search_input")
@@ -100,23 +137,33 @@ fun ToolCatalogScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                    .horizontalScroll(categoryScrollState),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 categories.forEach { cat ->
+                    val count = if (cat == "ALL") ToolDefinition.ALL_TOOLS.size else ToolDefinition.ALL_TOOLS.count { it.category.equals(cat, ignoreCase = true) }
                     FilterChip(
                         selected = selectedCategory == cat,
-                        onClick = { selectedCategory = cat },
-                        label = { Text(cat) }
+                        onClick = {
+                            if (selectedCategory != cat) {
+                                viewModel.setCatalogSelectedCategory(cat)
+                                viewModel.catalogScrollIndex = 0
+                                viewModel.catalogScrollOffset = 0
+                                coroutineScope.launch { listState.scrollToItem(0) }
+                            }
+                        },
+                        label = { Text("$cat ($count)") }
                     )
                 }
             }
 
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(filteredTools, key = { it.id }) { tool ->
+                itemsIndexed(filteredTools, key = { _, tool -> tool.id }) { index, tool ->
+                    val overallIndex = ToolDefinition.ALL_TOOLS.indexOfFirst { it.id == tool.id } + 1
                     val widgetEntity = allWidgets.find { it.id == tool.id }
                     val isPinned = widgetEntity?.isPinned ?: true
                     val visuals = ToolIconMapper.getVisualsForTool(tool.id)
@@ -203,8 +250,8 @@ fun ToolCatalogScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.Top
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -221,25 +268,53 @@ fun ToolCatalogScreen(
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
 
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            shape = RoundedCornerShape(6.dp)
+                                        ) {
+                                            Text(
+                                                text = if (selectedCategory == "ALL" && searchQuery.isBlank()) {
+                                                    "#${index + 1}"
+                                                } else {
+                                                    "#${index + 1} (${overallIndex})"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
                                         Text(
-                                            text = tool.title,
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                            text = tool.category,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                         if (isPinned) {
-                                            Spacer(modifier = Modifier.width(6.dp))
                                             Icon(
                                                 imageVector = Icons.Default.PushPin,
                                                 contentDescription = "Pinned",
                                                 tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(14.dp)
+                                                modifier = Modifier.size(12.dp)
                                             )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Text(
+                                        text = tool.title,
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
                                     Text(
                                         text = tool.description,
                                         style = MaterialTheme.typography.bodySmall,
@@ -249,24 +324,41 @@ fun ToolCatalogScreen(
 
                                 Spacer(modifier = Modifier.width(8.dp))
 
-                                IconButton(
-                                    onClick = { viewModel.togglePinById(tool.id, isPinned) },
-                                    modifier = Modifier.size(36.dp)
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = if (isPinned) Icons.Default.PushPin else Icons.Outlined.PushPin,
-                                        contentDescription = if (isPinned) "Unpin Tool" else "Pin Tool",
-                                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                    IconButton(
+                                        onClick = { viewModel.togglePinById(tool.id, isPinned) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPinned) Icons.Default.PushPin else Icons.Outlined.PushPin,
+                                            contentDescription = if (isPinned) "Unpin Tool" else "Pin Tool",
+                                            tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
 
-                                Button(
-                                    onClick = { onLaunchTool(tool.id) },
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.testTag("launch_tool_${tool.id}")
-                                ) {
-                                    Text("Open")
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null)
+                                    FilledTonalButton(
+                                        onClick = { onLaunchTool(tool.id) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier
+                                            .height(34.dp)
+                                            .testTag("launch_tool_${tool.id}")
+                                    ) {
+                                        Text(
+                                            text = "Open",
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.ChevronRight,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

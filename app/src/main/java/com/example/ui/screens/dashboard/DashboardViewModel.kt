@@ -70,6 +70,20 @@ class DashboardViewModel(
             initialValue = false
         )
 
+    private val _searchQuery = kotlinx.coroutines.flow.MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _isCopilotOpen = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val isCopilotOpen: StateFlow<Boolean> = _isCopilotOpen
+
+    fun setCopilotOpen(open: Boolean) {
+        _isCopilotOpen.value = open
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
     fun addTaskQuick(title: String) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -92,6 +106,10 @@ class DashboardViewModel(
                 value = amount
             )
         }
+    }
+
+    fun updateAiModel(model: String) {
+        settingsRepository.updateAiModel(model)
     }
 
     fun completeOnboarding(profile: String, unitSystem: String) {

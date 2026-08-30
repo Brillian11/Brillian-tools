@@ -26,11 +26,12 @@ class DashboardRepository(private val dashboardDao: DashboardDao) {
         val widgets = ToolDefinition.ALL_TOOLS.mapIndexed { index, tool ->
             val shouldPin = when (profile) {
                 "Woodworker" -> defaultIds.contains(tool.id) || tool.category == "Woodworking"
-                "Civil Engineer" -> defaultIds.contains(tool.id) || tool.category == "Civil Engineering"
-                "Electrician" -> defaultIds.contains(tool.id) || tool.category == "Electrical"
-                "Mechanical" -> defaultIds.contains(tool.id) || tool.category == "Mechanical & HVAC"
-                "Painter" -> defaultIds.contains(tool.id) || tool.category == "Painting & Coating" || tool.id == "widget_color_tools"
-                else -> defaultIds.contains(tool.id) || tool.category == "Utility" || tool.category == "Sensors" || tool.category == "Tasks" || tool.category == "Focus"
+                "Civil Engineer" -> defaultIds.contains(tool.id) || tool.category == "Civil Engineering" || tool.category == "Site & Field" || tool.category == "Field Engineering"
+                "Electrician" -> defaultIds.contains(tool.id) || tool.category == "Electrical" || tool.category == "Sensors"
+                "Mechanical" -> defaultIds.contains(tool.id) || tool.category == "Mechanical & HVAC" || tool.category == "Plumbing & Maintenance"
+                "Painter" -> defaultIds.contains(tool.id) || tool.category == "Painting & Coating" || tool.category == "Safety & Compliance" || tool.id == "widget_color_tools"
+                "Metalworker" -> defaultIds.contains(tool.id) || tool.category == "Metalworks"
+                else -> true
             }
             DashboardWidgetEntity(
                 id = tool.id,

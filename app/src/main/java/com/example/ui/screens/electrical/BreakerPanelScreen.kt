@@ -1,6 +1,5 @@
 package com.example.ui.screens.electrical
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,10 +20,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -49,10 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,9 +58,6 @@ fun BreakerPanelScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
-
     var showAddDialog by remember { mutableStateOf(false) }
 
     Surface(
@@ -99,7 +89,7 @@ fun BreakerPanelScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.FlashOn,
+                            imageVector = Icons.Default.Bolt,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(28.dp)
@@ -108,13 +98,13 @@ fun BreakerPanelScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Breaker Panel Load Calculator",
+                            text = "Breaker Panel & PLN Load Calculator",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Single/Three-Phase load balancing, neutral unbalance & busbar limits",
+                            text = "Includes PLN Indonesia standard power tiers (450W, 900W, 1300W, 2200W, 3500W, 5500W, 11000W)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -122,7 +112,7 @@ fun BreakerPanelScreen(
                 }
             }
 
-            // Panel Configuration Card
+            // System Selector
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
@@ -130,45 +120,62 @@ fun BreakerPanelScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "PANEL VOLTAGE & BUSBAR RATING",
+                        text = "ELECTRICAL SYSTEM TYPE",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        PanelSystemType.values().forEach { type ->
-                            FilterChip(
-                                selected = state.panelType == type,
-                                onClick = { viewModel.setPanelType(type) },
-                                label = { Text(if (type == PanelSystemType.SPLIT_PHASE_120_240) "120/240V 1-Phase" else type.name.replace('_', ' ')) }
-                            )
-                        }
+                    PanelSystemType.values().forEach { type ->
+                        FilterChip(
+                            selected = state.panelType == type,
+                            onClick = { viewModel.setPanelType(type) },
+                            label = { Text(type.voltageLabel) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
+                }
+            }
 
+            // PLN Standard Daya Presets Card
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "MAIN SERVICE BREAKER RATING:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                        text = "PLN INDONESIA STANDARD DAYA (WATT / VA)",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(100, 150, 200, 400).forEach { rating ->
-                            FilterChip(
-                                selected = state.mainBreakerAmps == rating,
-                                onClick = { viewModel.setMainBreaker(rating) },
-                                label = { Text("${rating}A Main") }
-                            )
+                    Text(
+                        text = "Tap a standard PLN capacity preset to set your main circuit limit:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        state.plnStandards.chunked(3).forEach { rowTiers ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                rowTiers.forEach { tier ->
+                                    FilterChip(
+                                        selected = state.mainBreakerAmps == tier.breakerAmps && state.panelType == PanelSystemType.SINGLE_PHASE_220V_PLN,
+                                        onClick = {
+                                            viewModel.setPanelType(PanelSystemType.SINGLE_PHASE_220V_PLN)
+                                            viewModel.setMainBreaker(tier.breakerAmps)
+                                        },
+                                        label = { Text(tier.label, fontSize = 11.sp) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Phase Balance Dashboard Meters
+            // Total Load & Busbar Capacity Metrics
             Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (state.isOverloaded) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
-                    else MaterialTheme.colorScheme.surfaceVariant
-                ),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -179,93 +186,51 @@ fun BreakerPanelScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "PHASE CURRENT DISTRIBUTION",
+                            text = "TOTAL CONNECTED LOAD SUMMARY",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         )
-                        IconButton(onClick = {
-                            val info = "Breaker Panel Schedule (${state.panelType.voltageLabel}):\n" +
-                                    "Total Connected: ${String.format("%.1f", state.totalConnectedVa)} VA\n" +
-                                    "Phase A: ${String.format("%.1f", state.phaseACurrentAmps)} A (${String.format("%.0f", state.phaseALoadVa)} VA)\n" +
-                                    "Phase B: ${String.format("%.1f", state.phaseBCurrentAmps)} A (${String.format("%.0f", state.phaseBLoadVa)} VA)\n" +
-                                    (if (state.panelType.isThreePhase) "Phase C: ${String.format("%.1f", state.phaseCCurrentAmps)} A (${String.format("%.0f", state.phaseCLoadVa)} VA)\n" else "") +
-                                    "Neutral Unbalance: ${String.format("%.1f", state.neutralUnbalanceAmps)} A\n" +
-                                    "Phase Imbalance: ${String.format("%.1f", state.phaseImbalancePct)}%\n" +
-                                    "Busbar Utilization: ${String.format("%.1f", state.busbarUtilizationPct)}% of ${state.busbarRatingAmps}A"
-                            clipboardManager.setText(AnnotatedString(info))
-                            viewModel.logPanelLoad()
-                            Toast.makeText(context, "Copied Panel Metrics!", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy")
+                        if (state.isOverloaded) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("OVERLOAD", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                            }
                         }
                     }
 
-                    // Phase A Bar
-                    PhaseMeterBar(
-                        phaseName = "Phase A (Line 1)",
-                        currentA = state.phaseACurrentAmps,
-                        va = state.phaseALoadVa,
-                        maxCapacityA = state.mainBreakerAmps.toDouble(),
-                        barColor = Color(0xFF1E88E5)
-                    )
-
-                    // Phase B Bar
-                    PhaseMeterBar(
-                        phaseName = "Phase B (Line 2)",
-                        currentA = state.phaseBCurrentAmps,
-                        va = state.phaseBLoadVa,
-                        maxCapacityA = state.mainBreakerAmps.toDouble(),
-                        barColor = Color(0xFFE53935)
-                    )
-
-                    // Phase C Bar (If 3-phase)
-                    if (state.panelType.isThreePhase) {
-                        PhaseMeterBar(
-                            phaseName = "Phase C (Line 3)",
-                            currentA = state.phaseCCurrentAmps,
-                            va = state.phaseCLoadVa,
-                            maxCapacityA = state.mainBreakerAmps.toDouble(),
-                            barColor = Color(0xFF43A047)
-                        )
-                    }
-
-                    // Neutral & Imbalance Metrics
-                    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text("Neutral Unbalance", style = MaterialTheme.typography.labelSmall)
-                                Text(
-                                    "${String.format("%.1f", state.neutralUnbalanceAmps)} A",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                                )
-                            }
-                            Column {
-                                Text("Phase Imbalance", style = MaterialTheme.typography.labelSmall)
-                                Text(
-                                    "${String.format("%.1f", state.phaseImbalancePct)}%",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = if (state.phaseImbalancePct < 15.0) Color(0xFF2E7D32) else Color(0xFFFB8C00)
-                                    )
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("Busbar Capacity", style = MaterialTheme.typography.labelSmall)
-                                Text(
-                                    "${String.format("%.1f", state.busbarUtilizationPct)}%",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = if (state.isOverloaded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                                    )
-                                )
-                            }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {                            Text("Total Connected Load", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "${String.format("%.2f", state.totalConnectedVa / 1000.0)} kVA",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "${String.format("%.0f", state.totalConnectedVa)} Watts",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Main Breaker / Capacity", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "${state.mainBreakerAmps} A (${state.mainBreakerAmps * 220} W)",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                            )
+                            Text(
+                                "Busbar Util: ${String.format("%.1f", state.busbarUtilizationPct)}%",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (state.isOverloaded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
             }
 
-            // Circuit Schedule Management
+            // Circuit Directory Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
@@ -291,9 +256,6 @@ fun BreakerPanelScreen(
                         }
                     }
 
-                    Text("Tip: Tap phase chip (e.g. 'Phase A') to rebalance single-pole loads between legs.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                    // Circuit items
                     state.circuits.forEach { circuit ->
                         Surface(
                             color = MaterialTheme.colorScheme.surface,
@@ -308,25 +270,16 @@ fun BreakerPanelScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(circuit.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                                     Text(
-                                        "${circuit.breakerRatingAmps}A ${circuit.poleType.name.replace('_', ' ')} • ${String.format("%.0f", circuit.loadVa)} VA",
+                                        "${circuit.breakerRatingAmps}A MCB • ${String.format("%.0f", circuit.loadVa)} Watts / VA",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    FilterChip(
-                                        selected = true,
-                                        onClick = { viewModel.toggleCircuitPhase(circuit.id) },
-                                        label = { Text("Phase ${circuit.assignedPhase}") }
-                                    )
-
-                                    IconButton(
-                                        onClick = { viewModel.removeCircuit(circuit.id) },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-                                    }
+                                IconButton(
+                                    onClick = { viewModel.removeCircuit(circuit.id) },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
@@ -338,22 +291,51 @@ fun BreakerPanelScreen(
 
     if (showAddDialog) {
         var cName by remember { mutableStateOf("") }
-        var cAmps by remember { mutableStateOf("20") }
-        var cVa by remember { mutableStateOf("1500") }
+        var cAmps by remember { mutableStateOf("10") }
+        var cVa by remember { mutableStateOf("1300") }
         var cPole by remember { mutableStateOf(CircuitPoleType.SINGLE_POLE) }
         var cPhase by remember { mutableStateOf("A") }
 
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Add New Circuit") },
+            title = { Text("Add New Circuit / Load") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = cName,
                         onValueChange = { cName = it },
-                        label = { Text("Circuit Name / Description") },
+                        label = { Text("Circuit Name (e.g. AC Master Bedroom)") },
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    Text("PLN Daya Watt Presets:", style = MaterialTheme.typography.labelSmall)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf(450, 900, 1300, 2200, 3500, 4400, 5500, 7700, 11000).forEach { watt ->
+                            FilterChip(
+                                selected = cVa == watt.toString(),
+                                onClick = {
+                                    cVa = watt.toString()
+                                    cAmps = when (watt) {
+                                        450 -> "2"
+                                        900 -> "4"
+                                        1300 -> "6"
+                                        2200 -> "10"
+                                        3500 -> "16"
+                                        4400 -> "20"
+                                        5500 -> "25"
+                                        7700 -> "35"
+                                        11000 -> "50"
+                                        else -> "10"
+                                    }
+                                },
+                                label = { Text("${watt}W", fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
                     OutlinedTextField(
                         value = cAmps,
                         onValueChange = { cAmps = it },
@@ -364,23 +346,10 @@ fun BreakerPanelScreen(
                     OutlinedTextField(
                         value = cVa,
                         onValueChange = { cVa = it },
-                        label = { Text("Connected Load (VA / Watts)") },
+                        label = { Text("Connected Load (Watts / VA)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterChip(
-                            selected = cPole == CircuitPoleType.SINGLE_POLE,
-                            onClick = { cPole = CircuitPoleType.SINGLE_POLE; cPhase = "A" },
-                            label = { Text("1-Pole") }
-                        )
-                        FilterChip(
-                            selected = cPole == CircuitPoleType.DOUBLE_POLE,
-                            onClick = { cPole = CircuitPoleType.DOUBLE_POLE; cPhase = "AB" },
-                            label = { Text("2-Pole") }
-                        )
-                    }
                 }
             },
             confirmButton = {
@@ -388,15 +357,15 @@ fun BreakerPanelScreen(
                     if (cName.isNotBlank()) {
                         viewModel.addCircuit(
                             name = cName,
-                            breakerAmps = cAmps.toIntOrNull() ?: 20,
+                            breakerAmps = cAmps.toIntOrNull() ?: 10,
                             pole = cPole,
                             phase = cPhase,
-                            loadVa = cVa.toDoubleOrNull() ?: 1500.0
+                            loadVa = cVa.toDoubleOrNull() ?: 1300.0
                         )
                         showAddDialog = false
                     }
                 }) {
-                    Text("Add")
+                    Text("Add Circuit")
                 }
             },
             dismissButton = {
@@ -404,32 +373,6 @@ fun BreakerPanelScreen(
                     Text("Cancel")
                 }
             }
-        )
-    }
-}
-
-@Composable
-private fun PhaseMeterBar(
-    phaseName: String,
-    currentA: Double,
-    va: Double,
-    maxCapacityA: Double,
-    barColor: Color
-) {
-    val pct = (currentA / maxCapacityA).toFloat().coerceIn(0f, 1f)
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(phaseName, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
-            Text(
-                "${String.format("%.1f", currentA)} A (${String.format("%.0f", va)} VA)",
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-            )
-        }
-        LinearProgressIndicator(
-            progress = { pct },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-            color = if (pct > 0.8f) Color(0xFFC62828) else barColor,
-            trackColor = MaterialTheme.colorScheme.surface
         )
     }
 }

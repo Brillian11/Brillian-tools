@@ -15,10 +15,11 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 data class StairLayoutUiState(
-    // Inputs
-    val totalRiseInches: Double = 108.0,       // 9 ft floor to floor
-    val targetRiserInches: Double = 7.5,       // Ideal 7.5"
-    val treadRunInches: Double = 10.5,         // Ideal 10.5"
+    val isMetric: Boolean = false,
+    // Inputs (in inches when imperial, in cm when metric)
+    val totalRiseInches: Double = 108.0,       // 9 ft or 270 cm
+    val targetRiserInches: Double = 7.5,       // Ideal 7.5" or 19.0 cm
+    val treadRunInches: Double = 10.5,         // Ideal 10.5" or 26.5 cm
     val stringerLumberSize: String = "2x12 (11.25\")", // "2x10 (9.25\")" or "2x12 (11.25\")"
     val stringerWidthInches: Double = 11.25,
     val treadThicknessInches: Double = 1.0,
@@ -33,17 +34,23 @@ data class StairLayoutUiState(
     val exactTreadRunInches: Double = 10.5,
     val totalRunInches: Double = 136.5,
     val totalRunFeetInches: String = "11' 4-1/2\"",
+    val totalRunSubText: String = "136.5\"",
     val stringerLengthInches: Double = 174.0,
-    val stringerThroatDepthInches: Double = 5.2, // Minimum 3.5" required
+    val stringerLengthDisplay: String = "174.0\"",
+    val exactRiserDisplay: String = "7.714\" each",
+    val exactTreadRunDisplay: String = "10.5\" run each",
+    val stringerThroatDepthInches: Double = 5.2,
+    val stringerThroatDisplay: String = "5.20\"",
     val stairAngleDeg: Double = 36.3,
-    val blondelComfortIndex: Double = 25.9, // 2R + T (ideal 24" - 25.5")
-    val calculatedHeadroomInches: Double = 84.0, // Minimum 80" (6'8")
+    val blondelComfortIndex: Double = 25.9,
+    val blondelDisplay: String = "25.9\"",
+    val calculatedHeadroomInches: Double = 84.0,
     
     // Building Code Flags (IRC 2021)
-    val isRiserCodeCompliant: Boolean = true,  // Max 7.75" (197mm)
-    val isTreadCodeCompliant: Boolean = true,  // Min 10.0" (254mm)
-    val isHeadroomCodeCompliant: Boolean = true,// Min 80.0" (2032mm)
-    val isThroatCodeCompliant: Boolean = true  // Min 3.5" (89mm)
+    val isRiserCodeCompliant: Boolean = true,
+    val isTreadCodeCompliant: Boolean = true,
+    val isHeadroomCodeCompliant: Boolean = true,
+    val isThroatCodeCompliant: Boolean = true
 )
 
 class StairLayoutViewModel(
@@ -57,6 +64,31 @@ class StairLayoutViewModel(
         recalculateStairs()
     }
 
+    fun setUnitSystem(metric: Boolean) {
+        if (_uiState.value.isMetric != metric) {
+            if (metric) {
+                _uiState.value = _uiState.value.copy(
+                    isMetric = true,
+                    totalRiseInches = 270.0, // cm
+                    targetRiserInches = 19.0, // cm
+                    treadRunInches = 26.5, // cm
+                    stairOpeningWellLengthInches = 300.0, // cm
+                    upperFloorThicknessInches = 26.5 // cm
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isMetric = false,
+                    totalRiseInches = 108.0, // inches
+                    targetRiserInches = 7.5, // inches
+                    treadRunInches = 10.5, // inches
+                    stairOpeningWellLengthInches = 120.0, // inches
+                    upperFloorThicknessInches = 10.5 // inches
+                )
+            }
+            recalculateStairs()
+        }
+    }
+
     fun updateInputs(
         totalRise: Double,
         targetRiser: Double,
@@ -65,26 +97,48 @@ class StairLayoutViewModel(
         wellLength: Double,
         upperFloorThick: Double
     ) {
-        val stringerW = if (lumberSize.startsWith("2x10")) 9.25 else 11.25
+        val isMetric = _uiState.value.isMetric
+        val minRise = if (isMetric) 30.0 else 12.0
+        val minTargetR = if (isMetric) 10.0 else 4.0
+        val maxTargetR = if (isMetric) 30.0 else 12.0
+        val minTread = if (isMetric) 15.0 else 8.0
+        val maxTread = if (isMetric) 45.0 else 16.0
+        val minWell = if (isMetric) 60.0 else 24.0
+        val minFloor = if (isMetric) 10.0 else 4.0
+
+        val stringerW = if (lumberSize.startsWith("2x10")) {
+            if (isMetric) 23.5 else 9.25
+        } else {
+            if (isMetric) 28.58 else 11.25
+        }
+
         _uiState.value = _uiState.value.copy(
-            totalRiseInches = totalRise.coerceAtLeast(12.0),
-            targetRiserInches = targetRiser.coerceIn(4.0, 12.0),
-            treadRunInches = treadRun.coerceIn(8.0, 16.0),
+            totalRiseInches = totalRise.coerceAtLeast(minRise),
+            targetRiserInches = targetRiser.coerceIn(minTargetR, maxTargetR),
+            treadRunInches = treadRun.coerceIn(minTread, maxTread),
             stringerLumberSize = lumberSize,
             stringerWidthInches = stringerW,
-            stairOpeningWellLengthInches = wellLength.coerceAtLeast(24.0),
-            upperFloorThicknessInches = upperFloorThick.coerceAtLeast(4.0)
+            stairOpeningWellLengthInches = wellLength.coerceAtLeast(minWell),
+            upperFloorThicknessInches = upperFloorThick.coerceAtLeast(minFloor)
         )
         recalculateStairs()
     }
 
     private fun recalculateStairs() {
-        val H = _uiState.value.totalRiseInches
-        val targetR = _uiState.value.targetRiserInches
-        val T = _uiState.value.treadRunInches
-        val W_stringer = _uiState.value.stringerWidthInches
-        val wellL = _uiState.value.stairOpeningWellLengthInches
-        val floorThick = _uiState.value.upperFloorThicknessInches
+        val s = _uiState.value
+        val H = s.totalRiseInches
+        val targetR = s.targetRiserInches
+        val T = s.treadRunInches
+        val isMetric = s.isMetric
+
+        val W_stringer = if (s.stringerLumberSize.startsWith("2x10")) {
+            if (isMetric) 23.5 else 9.25
+        } else {
+            if (isMetric) 28.58 else 11.25
+        }
+
+        val wellL = s.stairOpeningWellLengthInches
+        val floorThick = s.upperFloorThicknessInches
 
         // Exact Step Count
         val numRisers = (H / targetR).roundToInt().coerceAtLeast(2)
@@ -92,51 +146,65 @@ class StairLayoutViewModel(
         val numTreads = numRisers - 1
         val totalRun = numTreads * T
 
-        // Convert total run to feet & inches
-        val runFt = (totalRun / 12.0).toInt()
-        val runIn = totalRun % 12.0
-        val runFtInStr = "${runFt}' ${String.format("%.1f", runIn)}\""
-
-        // Stringer Hypotenuse Length
+        // Hypotenuse Length
         val stringerLen = sqrt(H * H + totalRun * totalRun)
 
         // Incline Angle
         val angleRad = atan2(exactRiser, T)
         val angleDeg = Math.toDegrees(angleRad)
 
-        // Stringer Throat Depth: Perpendicular wood left after cutting triangle notch
-        // Notch depth perpendicular to stringer = R * cos(angle)
-        // Throat = Lumber Width - (R * cos(angle))
+        // Throat depth
         val throat = W_stringer - (exactRiser * cos(angleRad))
 
-        // Blondel's Comfort Rule: 2 * Riser + Tread (Ideal 24 - 25.5")
+        // Blondel rule (2R + T)
         val blondel = 2.0 * exactRiser + T
 
-        // Headroom calculation under opening well header
-        // Header is at position wellL from bottom or top
-        // Vertical distance from tread under ceiling edge to header bottom
-        val headerDrop = H - floorThick
-        val stepsUnderWell = (wellL / T).toInt().coerceIn(1, numTreads)
+        // Headroom calculation
+        val maxTreads = numTreads.coerceAtLeast(1)
+        val stepsUnderWell = if (T > 0.0) (wellL / T).toInt().coerceIn(1, maxTreads) else 1
         val elevationAtHeader = stepsUnderWell * exactRiser
-        val headroom = H - elevationAtHeader - floorThick + 24.0 // Standard well clearance
+        val headroomOffset = if (isMetric) 61.0 else 24.0
+        val headroom = H - elevationAtHeader - floorThick + headroomOffset
 
         // Code validations (IRC 2021)
-        val riserOk = exactRiser <= 7.75
-        val treadOk = T >= 10.0
-        val headroomOk = headroom >= 80.0
-        val throatOk = throat >= 3.5
+        val riserOk = if (isMetric) exactRiser <= 19.7 else exactRiser <= 7.75
+        val treadOk = if (isMetric) T >= 25.4 else T >= 10.0
+        val headroomOk = if (isMetric) headroom >= 203.2 else headroom >= 80.0
+        val throatOk = if (isMetric) throat >= 8.9 else throat >= 3.5
 
-        _uiState.value = _uiState.value.copy(
+        val riserDisp = if (isMetric) "%.1f cm each".format(exactRiser) else "%.3f\" each".format(exactRiser)
+        val treadDisp = if (isMetric) "%.1f cm run each".format(T) else "%.1f\" run each".format(T)
+
+        val totalRunFtInStr = if (isMetric) {
+            "%.2f m".format(totalRun / 100.0)
+        } else {
+            val runFt = (totalRun / 12.0).toInt()
+            val runIn = totalRun % 12.0
+            "${runFt}' ${String.format("%.1f", runIn)}\""
+        }
+
+        val totalRunSubStr = if (isMetric) "%.1f cm".format(totalRun) else "%.1f\"".format(totalRun)
+        val stringerLenStr = if (isMetric) "%.2f m".format(stringerLen / 100.0) else "%.1f\"".format(stringerLen)
+        val throatStr = if (isMetric) "%.1f cm".format(throat) else "%.2f\"".format(throat)
+        val blondelStr = if (isMetric) "%.1f cm".format(blondel) else "%.1f\"".format(blondel)
+
+        _uiState.value = s.copy(
             stepCountRisers = numRisers,
             treadCount = numTreads,
             exactRiserHeightInches = exactRiser,
             exactTreadRunInches = T,
             totalRunInches = totalRun,
-            totalRunFeetInches = runFtInStr,
+            totalRunFeetInches = totalRunFtInStr,
+            totalRunSubText = totalRunSubStr,
             stringerLengthInches = stringerLen,
+            stringerLengthDisplay = stringerLenStr,
+            exactRiserDisplay = riserDisp,
+            exactTreadRunDisplay = treadDisp,
             stringerThroatDepthInches = throat,
+            stringerThroatDisplay = throatStr,
             stairAngleDeg = angleDeg,
             blondelComfortIndex = blondel,
+            blondelDisplay = blondelStr,
             calculatedHeadroomInches = headroom,
             isRiserCodeCompliant = riserOk,
             isTreadCodeCompliant = treadOk,
@@ -151,7 +219,7 @@ class StairLayoutViewModel(
             toolLogRepository.logToolActivity(
                 toolType = "WOODWORKING",
                 title = "Stair Layout Stringer",
-                summary = "${s.stepCountRisers} Risers @ ${String.format("%.2f", s.exactRiserHeightInches)}\", ${s.treadCount} Treads @ ${s.exactTreadRunInches}\" (Total Run: ${s.totalRunFeetInches})",
+                summary = "${s.stepCountRisers} Risers @ ${s.exactRiserDisplay}, ${s.treadCount} Treads @ ${s.exactTreadRunDisplay} (Total Run: ${s.totalRunFeetInches})",
                 value = s.stringerLengthInches
             )
         }

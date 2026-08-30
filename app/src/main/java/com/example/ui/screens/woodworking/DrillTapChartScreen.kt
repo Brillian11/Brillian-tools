@@ -77,35 +77,11 @@ fun DrillTapChartScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Header
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.FormatListNumbered, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "DRILL BIT / TAP & DIE REFERENCE",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Instant 75% thread tap drill sizes, decimal equivalents, metric conversions, and close/free clearance holes for Imperial UNC/UNF, Metric ISO, and NPT pipe.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            com.example.ui.components.ToolInfoBox(
+                icon = Icons.Default.FormatListNumbered,
+                title = "Drill Bit / Tap & Die Reference",
+                description = "Instant 75% thread tap drill sizes, decimal equivalents, metric conversions, and close/free clearance holes for Imperial UNC/UNF, Metric ISO, and NPT pipe."
+            )
 
             // Search Bar
             OutlinedTextField(

@@ -12,12 +12,25 @@ class NoteRepository(
 ) {
     val allNotes: Flow<List<QuickNoteEntity>> = noteDao.getAllNotes()
 
-    suspend fun addNote(title: String, content: String, tag: String = "Work", colorHex: String = "#3F51B5") {
+    suspend fun getNoteById(noteId: Long): QuickNoteEntity? = noteDao.getNoteById(noteId)
+
+    suspend fun addNote(
+        title: String,
+        content: String,
+        tag: String = "Work",
+        colorHex: String = "#3F51B5",
+        imagePaths: String = "",
+        pdfPaths: String = "",
+        isMarkdown: Boolean = true
+    ): Long {
         val note = QuickNoteEntity(
             title = title,
             content = content,
             tag = tag,
             colorHex = colorHex,
+            imagePaths = imagePaths,
+            pdfPaths = pdfPaths,
+            isMarkdown = isMarkdown,
             updatedAt = System.currentTimeMillis(),
             syncStatus = "PENDING_SYNC"
         )
@@ -28,6 +41,24 @@ class NoteRepository(
                 entityId = id.toString(),
                 action = "CREATE",
                 payload = "Note: $title [$tag]",
+                status = "PENDING"
+            )
+        )
+        return id
+    }
+
+    suspend fun updateNote(note: QuickNoteEntity) {
+        val updated = note.copy(
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = "PENDING_SYNC"
+        )
+        noteDao.updateNote(updated)
+        syncQueueDao.enqueue(
+            SyncQueueEntity(
+                entityType = "NOTE",
+                entityId = note.id.toString(),
+                action = "UPDATE",
+                payload = "Updated Note: ${note.title}",
                 status = "PENDING"
             )
         )

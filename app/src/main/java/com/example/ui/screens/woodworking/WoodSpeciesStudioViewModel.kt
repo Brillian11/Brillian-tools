@@ -286,6 +286,84 @@ class WoodSpeciesStudioViewModel(
             toxicityWarning = "Mild respiratory risk from dust.",
             description = "Striking straight lines, light golden tone, resembles European Ash. The premier choice in Modern minimalist Indonesian furniture and panelings.",
             handPlaning = 4, machineRouting = 4, nailScrewHolding = 4, glueAdhesion = 5, steamBending = 4
+        ),
+        StudioWoodSpecies(
+            name = "Albasia / Sengon",
+            botanicalName = "Albizia falcataria",
+            region = "Asian & Southeast Asian",
+            jankaHardness = 240,
+            density = 310,
+            tangentialShrinkage = 5.2,
+            radialShrinkage = 2.1,
+            trRatio = 2.48,
+            toxicityWarning = "Low toxicity. Normal dust precautions.",
+            description = "Extremely fast-growing Indonesian plantation lightweight timber. Very soft, easy to cut and assemble. Ideal for light packaging boxes, core panels, and light furniture.",
+            handPlaning = 5, machineRouting = 4, nailScrewHolding = 3, glueAdhesion = 4, steamBending = 2
+        ),
+        StudioWoodSpecies(
+            name = "Waru",
+            botanicalName = "Hibiscus tiliaceus",
+            region = "Asian & Southeast Asian",
+            jankaHardness = 690,
+            density = 550,
+            tangentialShrinkage = 6.1,
+            radialShrinkage = 3.0,
+            trRatio = 2.03,
+            toxicityWarning = "Low allergen risk.",
+            description = "Traditional Javanese coastal timber with high toughness and flexibility. Historically prized for boat ribs, cart wheels, and traditional tool handles.",
+            handPlaning = 4, machineRouting = 4, nailScrewHolding = 4, glueAdhesion = 5, steamBending = 4
+        ),
+        StudioWoodSpecies(
+            name = "Keruing",
+            botanicalName = "Dipterocarpus",
+            region = "Asian & Southeast Asian",
+            jankaHardness = 1250,
+            density = 760,
+            tangentialShrinkage = 8.5,
+            radialShrinkage = 4.6,
+            trRatio = 1.85,
+            toxicityWarning = "Resin exudation can irritate skin and clog sandpapers.",
+            description = "Heavy structural hardwood common in SE Asian tropical forests. High bending strength for heavy floor joists, truck beds, and bridge timbers.",
+            handPlaning = 3, machineRouting = 3, nailScrewHolding = 5, glueAdhesion = 3, steamBending = 3
+        ),
+        StudioWoodSpecies(
+            name = "Nangka (Jackfruit Wood)",
+            botanicalName = "Artocarpus heterophyllus",
+            region = "Asian & Southeast Asian",
+            jankaHardness = 1170,
+            density = 670,
+            tangentialShrinkage = 6.5,
+            radialShrinkage = 3.2,
+            trRatio = 2.03,
+            toxicityWarning = "Natural yellow dye can stain skin and clothes.",
+            description = "Ages from bright yellow to a rich lustrous golden-brown. Highly durable against termites. Highly treasured in Java for traditional Gamelan instruments and carving.",
+            handPlaning = 4, machineRouting = 4, nailScrewHolding = 4, glueAdhesion = 4, steamBending = 3
+        ),
+        StudioWoodSpecies(
+            name = "Cengkih (Clove Wood)",
+            botanicalName = "Syzygium aromaticum",
+            region = "Asian & Southeast Asian",
+            jankaHardness = 1420,
+            density = 880,
+            tangentialShrinkage = 7.0,
+            radialShrinkage = 3.5,
+            trRatio = 2.0,
+            toxicityWarning = "Aromatic oils can cause mild sensitization.",
+            description = "Dense fruitwood from mature spice plantations. Exceptionally hard and heavy with distinct aromatic grain patterns.",
+            handPlaning = 3, machineRouting = 3, nailScrewHolding = 5, glueAdhesion = 4, steamBending = 2
+        ),
+        StudioWoodSpecies(
+            name = "Bangkirai (Yellow Balau)",
+            botanicalName = "Shorea laevis",
+            region = "Asian & Southeast Asian",
+            jankaHardness = 1790,
+            density = 910,
+            tangentialShrinkage = 7.8,
+            radialShrinkage = 4.1,
+            trRatio = 1.9,
+            toxicityWarning = "Silica content can cause severe dulling of steel tools.",
+            description = "Premier heavy-duty tropical timber for outdoor decking, heavy bridge framing, and marine construction. Exceptional natural weather resistance.",
+            handPlaning = 2, machineRouting = 3, nailScrewHolding = 5, glueAdhesion = 3, steamBending = 2
         )
     )
 

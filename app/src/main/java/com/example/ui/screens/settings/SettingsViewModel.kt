@@ -54,4 +54,24 @@ class SettingsViewModel(
     fun setCurrencyCode(code: String) {
         settingsRepository.updateCurrencyCode(code)
     }
+
+    fun updateAiEnabled(enabled: Boolean) {
+        settingsRepository.updateAiEnabled(enabled)
+    }
+
+    fun updateAiProvider(provider: String) {
+        settingsRepository.updateAiProvider(provider)
+    }
+
+    fun updateAiApiKey(apiKey: String) {
+        settingsRepository.updateAiApiKey(apiKey)
+    }
+
+    fun updateAiModel(model: String) {
+        settingsRepository.updateAiModel(model)
+    }
+
+    fun setLanguageCode(code: String) {
+        settingsRepository.updateLanguageCode(code)
+    }
 }

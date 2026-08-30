@@ -14,7 +14,7 @@ data class WoodSpecies(
     val defaultPricePerBF: Double,
     val jankaHardnessLbf: Int,
     val densityLbsPerCuFt: Double,
-    val category: String // Hardwood, Softwood, Exotic
+    val category: String
 )
 
 data class LumberItem(
@@ -32,6 +32,7 @@ data class LumberItem(
 )
 
 data class BoardFootageUiState(
+    val isMetric: Boolean = false,
     val speciesList: List<WoodSpecies> = listOf(
         WoodSpecies("Black Walnut", 12.50, 1010, 38.0, "Hardwood"),
         WoodSpecies("White Oak", 8.75, 1360, 47.0, "Hardwood"),
@@ -48,17 +49,13 @@ data class BoardFootageUiState(
         WoodSpecies("Genuine Mahogany", 14.50, 830, 36.0, "Exotic")
     ),
     val selectedSpecies: WoodSpecies = WoodSpecies("Black Walnut", 12.50, 1010, 38.0, "Hardwood"),
-    
-    // Active Input
-    val inputThicknessQuarter: String = "4/4 (1.0\")", // 4/4, 5/4, 6/4, 8/4, 10/4, 12/4
+    val inputThicknessQuarter: String = "4/4 (1.0\")",
     val thicknessInches: Double = 1.0,
     val widthInches: Double = 6.0,
     val lengthFeet: Double = 8.0,
     val quantity: Int = 4,
-    val wastePercentage: Double = 15.0, // 15% standard wood waste
+    val wastePercentage: Double = 15.0,
     val customPricePerBF: Double = 12.50,
-    
-    // Lumber Cut List
     val lumberList: List<LumberItem> = listOf(
         LumberItem(
             label = "Table Top Planks",
@@ -85,8 +82,6 @@ data class BoardFootageUiState(
             weightLbs = 25.3
         )
     ),
-    
-    // Grand Totals
     val totalBoardFeetNet: Double = 32.0,
     val totalBoardFeetWithWaste: Double = 36.8,
     val totalLumberCost: Double = 412.0,
@@ -104,6 +99,13 @@ class BoardFootageViewModel(
         recalculateTotals()
     }
 
+    fun setUnitSystem(metric: Boolean) {
+        if (_uiState.value.isMetric != metric) {
+            _uiState.value = _uiState.value.copy(isMetric = metric)
+            recalculateTotals()
+        }
+    }
+
     fun selectSpecies(species: WoodSpecies) {
         _uiState.value = _uiState.value.copy(
             selectedSpecies = species,
@@ -112,14 +114,14 @@ class BoardFootageViewModel(
     }
 
     fun setThicknessQuarter(quarterLabel: String) {
-        val thickness = when (quarterLabel) {
-            "4/4 (1.0\")" -> 1.0
-            "5/4 (1.25\")" -> 1.25
-            "6/4 (1.5\")" -> 1.5
-            "8/4 (2.0\")" -> 2.0
-            "10/4 (2.5\")" -> 2.5
-            "12/4 (3.0\")" -> 3.0
-            "16/4 (4.0\")" -> 4.0
+        val thickness = when {
+            quarterLabel.contains("25mm") || quarterLabel.contains("4/4") -> 1.0
+            quarterLabel.contains("32mm") || quarterLabel.contains("5/4") -> 1.25
+            quarterLabel.contains("38mm") || quarterLabel.contains("6/4") -> 1.5
+            quarterLabel.contains("50mm") || quarterLabel.contains("8/4") -> 2.0
+            quarterLabel.contains("63mm") || quarterLabel.contains("10/4") -> 2.5
+            quarterLabel.contains("75mm") || quarterLabel.contains("12/4") -> 3.0
+            quarterLabel.contains("100mm") || quarterLabel.contains("16/4") -> 4.0
             else -> 1.0
         }
         _uiState.value = _uiState.value.copy(
@@ -128,13 +130,18 @@ class BoardFootageViewModel(
         )
     }
 
-    fun updateDimensions(thickness: Double, width: Double, lengthFt: Double, qty: Int, pricePerBF: Double) {
+    fun updateDimensions(thickness: Double, width: Double, length: Double, qty: Int, price: Double) {
+        val isMetric = _uiState.value.isMetric
+        val tIn = if (isMetric) thickness / 25.4 else thickness
+        val wIn = if (isMetric) width / 25.4 else width
+        val lFt = if (isMetric) length * 3.28084 else length
+
         _uiState.value = _uiState.value.copy(
-            thicknessInches = thickness.coerceAtLeast(0.1),
-            widthInches = width.coerceAtLeast(0.5),
-            lengthFeet = lengthFt.coerceAtLeast(0.5),
+            thicknessInches = tIn.coerceAtLeast(0.1),
+            widthInches = wIn.coerceAtLeast(0.5),
+            lengthFeet = lFt.coerceAtLeast(0.1),
             quantity = qty.coerceAtLeast(1),
-            customPricePerBF = pricePerBF.coerceAtLeast(0.0)
+            customPricePerBF = price.coerceAtLeast(0.0)
         )
     }
 
@@ -145,12 +152,9 @@ class BoardFootageViewModel(
 
     fun addLumberItem(label: String) {
         val state = _uiState.value
-        // Formula: BF = (Thickness_in * Width_in * Length_ft) / 12 * Quantity
         val singleBF = (state.thicknessInches * state.widthInches * state.lengthFeet) / 12.0
         val totalBF = singleBF * state.quantity
         val cost = totalBF * state.customPricePerBF
-        
-        // Weight: (BF / 12 cu ft) * Density (lbs/cu ft)
         val cuFt = totalBF / 12.0
         val weight = cuFt * state.selectedSpecies.densityLbsPerCuFt
 
@@ -166,18 +170,8 @@ class BoardFootageViewModel(
             itemCost = cost,
             weightLbs = weight
         )
-
         _uiState.value = _uiState.value.copy(lumberList = _uiState.value.lumberList + newItem)
         recalculateTotals()
-
-        viewModelScope.launch {
-            toolLogRepository.logToolActivity(
-                toolType = "WOODWORKING",
-                title = "Lumber Board Feet",
-                summary = "${newItem.label} (${newItem.species}): ${String.format("%.1f", totalBF)} BF - $${String.format("%.2f", cost)}",
-                value = totalBF
-            )
-        }
     }
 
     fun removeLumberItem(id: String) {

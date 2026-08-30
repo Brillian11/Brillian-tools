@@ -13,6 +13,7 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 enum class PanelSystemType(val voltageLabel: String, val isThreePhase: Boolean) {
+    SINGLE_PHASE_220V_PLN("220V 1-Phase (PLN Indonesia Standard)", false),
     SPLIT_PHASE_120_240("120/240V Split-Phase (1-Phase 3-Wire)", false),
     THREE_PHASE_120_208("120/208V 3-Phase 4-Wire (Wye)", true),
     THREE_PHASE_277_480("277/480V 3-Phase 4-Wire (Wye)", true)
@@ -33,35 +34,42 @@ data class BreakerCircuit(
     val loadVa: Double
 )
 
+data class PlnPowerTier(val label: String, val va: Double, val breakerAmps: Int)
+
 data class BreakerPanelUiState(
-    val panelType: PanelSystemType = PanelSystemType.SPLIT_PHASE_120_240,
-    val mainBreakerAmps: Int = 200,
-    val busbarRatingAmps: Int = 200,
+    val panelType: PanelSystemType = PanelSystemType.SINGLE_PHASE_220V_PLN,
+    val mainBreakerAmps: Int = 25,
+    val busbarRatingAmps: Int = 40,
     val circuits: List<BreakerCircuit> = listOf(
-        BreakerCircuit("1", "Kitchen Small Appliances", 20, CircuitPoleType.SINGLE_POLE, "A", 1800.0),
-        BreakerCircuit("2", "Living Room & Lighting", 15, CircuitPoleType.SINGLE_POLE, "B", 1200.0),
-        BreakerCircuit("3", "HVAC Heat Pump", 40, CircuitPoleType.DOUBLE_POLE, "AB", 7200.0),
-        BreakerCircuit("4", "EV Level 2 Charger", 50, CircuitPoleType.DOUBLE_POLE, "AB", 9600.0),
-        BreakerCircuit("5", "Water Heater", 30, CircuitPoleType.DOUBLE_POLE, "AB", 4500.0),
-        BreakerCircuit("6", "Master Bedroom & Bath", 20, CircuitPoleType.SINGLE_POLE, "A", 1500.0),
-        BreakerCircuit("7", "Workshop & Garage Tools", 20, CircuitPoleType.SINGLE_POLE, "B", 2200.0)
+        BreakerCircuit("1", "Lampu & Stop Kontak R1 (PLN 900W)", 4, CircuitPoleType.SINGLE_POLE, "A", 900.0),
+        BreakerCircuit("2", "AC & Water Heater R2 (PLN 1300W)", 6, CircuitPoleType.SINGLE_POLE, "A", 1300.0),
+        BreakerCircuit("3", "Dapur & Pompa Air (PLN 2200W)", 10, CircuitPoleType.SINGLE_POLE, "A", 2200.0)
     ),
-
     // Calculated Phase Loads
-    val phaseALoadVa: Double = 13950.0,
-    val phaseBLoadVa: Double = 14050.0,
+    val phaseALoadVa: Double = 4400.0,
+    val phaseBLoadVa: Double = 0.0,
     val phaseCLoadVa: Double = 0.0,
-    val totalConnectedVa: Double = 28000.0,
-
-    val phaseACurrentAmps: Double = 116.25,
-    val phaseBCurrentAmps: Double = 117.08,
+    val totalConnectedVa: Double = 4400.0,
+    val phaseACurrentAmps: Double = 20.0,
+    val phaseBCurrentAmps: Double = 0.0,
     val phaseCCurrentAmps: Double = 0.0,
-    val neutralUnbalanceAmps: Double = 0.83,
-
-    val maxPhaseCurrentAmps: Double = 117.08,
-    val busbarUtilizationPct: Double = 58.54,
-    val phaseImbalancePct: Double = 0.71,
-    val isOverloaded: Boolean = false
+    val neutralUnbalanceAmps: Double = 20.0,
+    val maxPhaseCurrentAmps: Double = 20.0,
+    val busbarUtilizationPct: Double = 50.0,
+    val phaseImbalancePct: Double = 0.0,
+    val isOverloaded: Boolean = false,
+    val plnStandards: List<PlnPowerTier> = listOf(
+        PlnPowerTier("450 VA (2A)", 450.0, 2),
+        PlnPowerTier("900 VA (4A)", 900.0, 4),
+        PlnPowerTier("1300 VA (6A)", 1300.0, 6),
+        PlnPowerTier("2200 VA (10A)", 2200.0, 10),
+        PlnPowerTier("3500 VA (16A)", 3500.0, 16),
+        PlnPowerTier("4400 VA (20A)", 4400.0, 20),
+        PlnPowerTier("5500 VA (25A)", 5500.0, 25),
+        PlnPowerTier("6600 VA (30A)", 6600.0, 30),
+        PlnPowerTier("7700 VA (35A)", 7700.0, 35),
+        PlnPowerTier("11000 VA (50A)", 11000.0, 50)
+    )
 )
 
 class BreakerPanelViewModel(
@@ -76,7 +84,8 @@ class BreakerPanelViewModel(
     }
 
     fun setPanelType(type: PanelSystemType) {
-        _uiState.value = _uiState.value.copy(panelType = type)
+        val defaultMainAmps = if (type == PanelSystemType.SINGLE_PHASE_220V_PLN) 25 else 200
+        _uiState.value = _uiState.value.copy(panelType = type, mainBreakerAmps = defaultMainAmps, busbarRatingAmps = defaultMainAmps)
         recalculate()
     }
 
@@ -108,7 +117,7 @@ class BreakerPanelViewModel(
         val updated = _uiState.value.circuits.map { c ->
             if (c.id == id && c.poleType == CircuitPoleType.SINGLE_POLE) {
                 val nextPhase = when (c.assignedPhase) {
-                    "A" -> "B"
+                    "A" -> if (isThreePhase) "B" else "A"
                     "B" -> if (isThreePhase) "C" else "A"
                     "C" -> "A"
                     else -> "A"
@@ -127,6 +136,7 @@ class BreakerPanelViewModel(
         var vaC = 0.0
 
         val lineToNeutralV = when (s.panelType) {
+            PanelSystemType.SINGLE_PHASE_220V_PLN -> 220.0
             PanelSystemType.SPLIT_PHASE_120_240 -> 120.0
             PanelSystemType.THREE_PHASE_120_208 -> 120.0
             PanelSystemType.THREE_PHASE_277_480 -> 277.0
@@ -143,7 +153,6 @@ class BreakerPanelViewModel(
                     }
                 }
                 CircuitPoleType.DOUBLE_POLE -> {
-                    // 2-Pole splits equally between two legs
                     when (c.assignedPhase) {
                         "AB" -> { vaA += c.loadVa / 2.0; vaB += c.loadVa / 2.0 }
                         "BC" -> { vaB += c.loadVa / 2.0; vaC += c.loadVa / 2.0 }
@@ -152,7 +161,6 @@ class BreakerPanelViewModel(
                     }
                 }
                 CircuitPoleType.THREE_POLE -> {
-                    // 3-Pole splits equally across all 3 phases
                     vaA += c.loadVa / 3.0
                     vaB += c.loadVa / 3.0
                     vaC += c.loadVa / 3.0
@@ -161,14 +169,14 @@ class BreakerPanelViewModel(
         }
 
         val iA = vaA / lineToNeutralV
-        val iB = vaB / lineToNeutralV
+        val iB = if (s.panelType == PanelSystemType.SINGLE_PHASE_220V_PLN) 0.0 else vaB / lineToNeutralV
         val iC = if (s.panelType.isThreePhase) vaC / lineToNeutralV else 0.0
 
-        // Neutral Current
-        val inAmps = if (!s.panelType.isThreePhase) {
+        val inAmps = if (s.panelType == PanelSystemType.SINGLE_PHASE_220V_PLN) {
+            iA
+        } else if (!s.panelType.isThreePhase) {
             abs(iA - iB)
         } else {
-            // In = sqrt(Ia^2 + Ib^2 + Ic^2 - Ia*Ib - Ib*Ic - Ic*Ia)
             val term = (iA * iA) + (iB * iB) + (iC * iC) - (iA * iB) - (iB * iC) - (iC * iA)
             sqrt(max(0.0, term))
         }
@@ -176,9 +184,8 @@ class BreakerPanelViewModel(
         val maxI = if (s.panelType.isThreePhase) max(iA, max(iB, iC)) else max(iA, iB)
         val minI = if (s.panelType.isThreePhase) min(iA, min(iB, iC)) else min(iA, iB)
         val avgI = if (s.panelType.isThreePhase) (iA + iB + iC) / 3.0 else (iA + iB) / 2.0
-
         val imbalancePct = if (avgI > 0.0) ((maxI - minI) / avgI) * 100.0 else 0.0
-        val busbarUtil = (maxI / s.busbarRatingAmps.toDouble()) * 100.0
+        val busbarUtil = if (s.busbarRatingAmps > 0) (maxI / s.busbarRatingAmps.toDouble()) * 100.0 else 0.0
         val isOver = maxI > s.mainBreakerAmps.toDouble()
 
         _uiState.value = _uiState.value.copy(
@@ -199,7 +206,7 @@ class BreakerPanelViewModel(
 
     fun logPanelLoad() {
         val s = _uiState.value
-        val summary = "${s.panelType.voltageLabel} Panel: Total ${String.format("%.1f", s.totalConnectedVa / 1000.0)} kVA. Phase A=${String.format("%.1f", s.phaseACurrentAmps)}A, Phase B=${String.format("%.1f", s.phaseBCurrentAmps)}A (Busbar: ${String.format("%.1f", s.busbarUtilizationPct)}%, Neutral=${String.format("%.1f", s.neutralUnbalanceAmps)}A)"
+        val summary = "${s.panelType.voltageLabel} Panel: Total ${String.format("%.1f", s.totalConnectedVa / 1000.0)} kVA. Phase A=${String.format("%.1f", s.phaseACurrentAmps)}A (Busbar: ${String.format("%.1f", s.busbarUtilizationPct)}%)"
         viewModelScope.launch {
             toolLogRepository.logToolActivity(
                 toolType = "ELECTRICAL",

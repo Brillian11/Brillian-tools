@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -73,14 +73,13 @@ class VibrationAnalyzerViewModel(
     private val _timeWaveform = MutableStateFlow<List<Float>>(emptyList())
     val timeWaveform: StateFlow<List<Float>> = _timeWaveform.asStateFlow()
 
-    private val _frequencySpectrum = MutableStateFlow<List<Pair<Float, Float>>>(emptyList()) // (Hz, Amplitude)
+    private val _frequencySpectrum = MutableStateFlow<List<Pair<Float, Float>>>(emptyList())
     val frequencySpectrum: StateFlow<List<Pair<Float, Float>>> = _frequencySpectrum.asStateFlow()
 
     private val _lastLogSaved = MutableStateFlow(false)
     val lastLogSaved: StateFlow<Boolean> = _lastLogSaved.asStateFlow()
 
     private val accelBuffer = ArrayList<Float>()
-    private var lastTimestamp = 0L
 
     init {
         startAnalyzer()
@@ -89,78 +88,82 @@ class VibrationAnalyzerViewModel(
     fun startAnalyzer() {
         if (_isSampling.value) return
         _isSampling.value = true
-
-        if (accelSensor != null && sensorManager != null) {
-            sensorManager.registerListener(this, accelSensor, SensorManager.SENSOR_DELAY_FASTEST)
+        try {
+            if (accelSensor != null && sensorManager != null) {
+                sensorManager.registerListener(this, accelSensor, SensorManager.SENSOR_DELAY_FASTEST)
+            }
+        } catch (e: Exception) {
+            // Ignore sensor registration errors gracefully
         }
 
-        // Start processing simulation loop
         viewModelScope.launch {
             var tick = 0f
             while (_isSampling.value) {
-                kotlinx.coroutines.delay(80)
-                tick += 0.2f
+                try {
+                    kotlinx.coroutines.delay(80)
+                    tick += 0.2f
+                    val fundamentalHz = (_operatingRpm.value / 60.0f).coerceAtLeast(1f)
+                    val harmonics = listOf(
+                        fundamentalHz to 0.65f,
+                        (fundamentalHz * 2f) to 0.25f,
+                        (fundamentalHz * 3f) to 0.12f,
+                        85.0f to 0.08f
+                    )
 
-                val fundamentalHz = _operatingRpm.value / 60.0f
-                val harmonics = listOf(
-                    fundamentalHz to 0.65f, // 1X unbalance
-                    (fundamentalHz * 2f) to 0.25f, // 2X misalignment
-                    (fundamentalHz * 3f) to 0.12f, // 3X blade pass
-                    85.0f to 0.08f // bearing chatter
-                )
-
-                // Generate Time Waveform
-                val wave = (0..40).map { i ->
-                    val t = tick + (i * 0.05f)
-                    var a = 0f
-                    harmonics.forEach { (freq, amp) ->
-                        a += amp * sin(2 * PI.toFloat() * (freq / 30f) * t)
-                    }
-                    a + ((sin(t * 13f) * 0.05f).toFloat())
-                }
-                _timeWaveform.value = wave
-
-                // Generate Frequency Spectrum FFT
-                val spectrum = (1..60).map { bin ->
-                    val hz = bin * 2.0f
-                    var amp = 0.05f
-                    harmonics.forEach { (freq, baseAmp) ->
-                        val diff = kotlin.math.abs(hz - freq)
-                        if (diff < 3.0f) {
-                            amp += baseAmp * (1f - (diff / 3.0f))
+                    val wave = (0..40).map { i ->
+                        val t = tick + (i * 0.05f)
+                        var a = 0f
+                        harmonics.forEach { (freq, amp) ->
+                            a += amp * sin(2 * PI.toFloat() * (freq / 30f) * t)
                         }
+                        a + ((sin(t * 13f) * 0.05f).toFloat())
                     }
-                    hz to amp
+                    _timeWaveform.value = wave
+
+                    val spectrum = (1..60).map { bin ->
+                        val hz = bin * 2.0f
+                        var amp = 0.05f
+                        harmonics.forEach { (freq, baseAmp) ->
+                            val diff = kotlin.math.abs(hz - freq)
+                            if (diff < 3.0f) {
+                                amp += baseAmp * (1f - (diff / 3.0f))
+                            }
+                        }
+                        hz to amp
+                    }
+                    _frequencySpectrum.value = spectrum
+
+                    val baseRms = (1.6f + sin(tick * 0.5f) * 0.4f).coerceAtLeast(0.1f)
+                    val peakG = (0.35f + sin(tick * 0.3f) * 0.1f).coerceAtLeast(0.01f)
+                    val zone = calculateIsoZone(baseRms, _machineClass.value)
+                    val faultDesc = when {
+                        baseRms > 4.5f -> "Severe Rotor Unbalance & Misalignment"
+                        baseRms > 2.8f -> "Bearing Wear / Mechanical Looseness"
+                        else -> "1X Rotor Normal Unbalance (Within Limits)"
+                    }
+
+                    _metrics.value = VibrationMetrics(
+                        rmsVelocityMmS = baseRms,
+                        peakAccelG = peakG,
+                        peakFreqHz = fundamentalHz,
+                        peakRpm = _operatingRpm.value,
+                        dominantFault = faultDesc,
+                        severityZone = zone
+                    )
+                } catch (e: Exception) {
+                    // Prevent sampling loop from failing
                 }
-                _frequencySpectrum.value = spectrum
-
-                // Compute overall RMS Velocity in mm/s
-                val baseRms = 1.6f + sin(tick * 0.5f) * 0.4f
-                val peakG = 0.35f + sin(tick * 0.3f) * 0.1f
-
-                val zone = calculateIsoZone(baseRms, _machineClass.value)
-
-                val faultDesc = when {
-                    baseRms > 4.5f -> "Severe Rotor Unbalance & Misalignment"
-                    baseRms > 2.8f -> "Bearing Wear / Mechanical Looseness"
-                    else -> "1X Rotor Normal Unbalance (Within Limits)"
-                }
-
-                _metrics.value = VibrationMetrics(
-                    rmsVelocityMmS = baseRms,
-                    peakAccelG = peakG,
-                    peakFreqHz = fundamentalHz,
-                    peakRpm = _operatingRpm.value,
-                    dominantFault = faultDesc,
-                    severityZone = zone
-                )
             }
         }
     }
 
     fun stopAnalyzer() {
         _isSampling.value = false
-        sensorManager?.unregisterListener(this)
+        try {
+            sensorManager?.unregisterListener(this)
+        } catch (e: Exception) {
+            // Ignore
+        }
     }
 
     fun setMachineClass(mClass: MachineClass) {
@@ -201,13 +204,19 @@ class VibrationAnalyzerViewModel(
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            val ax = event.values[0]
-            val ay = event.values[1]
-            val az = event.values[2]
-            val mag = sqrt(ax * ax + ay * ay + az * az) - SensorManager.GRAVITY_EARTH
-            accelBuffer.add(mag)
-            if (accelBuffer.size > 128) accelBuffer.removeAt(0)
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER && event.values != null && event.values.size >= 3) {
+            try {
+                val ax = event.values[0]
+                val ay = event.values[1]
+                val az = event.values[2]
+                val mag = sqrt(ax * ax + ay * ay + az * az) - SensorManager.GRAVITY_EARTH
+                synchronized(accelBuffer) {
+                    accelBuffer.add(mag)
+                    if (accelBuffer.size > 128) accelBuffer.removeAt(0)
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
         }
     }
 
@@ -219,7 +228,11 @@ class VibrationAnalyzerViewModel(
             toolLogRepository?.logToolActivity(
                 toolType = "widget_vibration_analyzer",
                 title = "Vibration Spectrum: $machineryName",
-                summary = "RMS: ${String.format("%.2f mm/s", m.rmsVelocityMmS)}, Accel: ${String.format("%.2f g pk", m.peakAccelG)}, Peak: ${String.format("%.1f Hz (%d RPM)", m.peakFreqHz, m.peakRpm)}, ISO: ${m.severityZone.zone} (${m.severityZone.status}), Fault: ${m.dominantFault}",
+                summary = String.format(
+                    Locale.US,
+                    "RMS: %.2f mm/s, Accel: %.2f g pk, Peak: %.1f Hz (%d RPM), ISO: %s (%s), Fault: %s",
+                    m.rmsVelocityMmS, m.peakAccelG, m.peakFreqHz, m.peakRpm, m.severityZone.zone, m.severityZone.status, m.dominantFault
+                ),
                 value = m.rmsVelocityMmS.toDouble()
             )
             _lastLogSaved.value = true

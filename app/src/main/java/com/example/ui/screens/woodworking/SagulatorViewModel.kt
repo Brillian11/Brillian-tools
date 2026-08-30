@@ -62,6 +62,27 @@ class SagulatorViewModel(
         SagulatorWoodSpecies("melamine", "Melamine Particleboard", "Sheet Goods", 380000.0, 47.0)
     )
 
+    private val _isMetric = MutableStateFlow(false)
+    val isMetric: StateFlow<Boolean> = _isMetric.asStateFlow()
+
+    fun setUnitSystem(metric: Boolean) {
+        if (_isMetric.value != metric) {
+            _isMetric.value = metric
+            if (metric) {
+                _shelfSpanInches.value = 90.0 // cm (~35.4 in)
+                _shelfDepthInches.value = 30.0 // cm (~11.8 in)
+                _shelfThicknessInches.value = 19.0 / 25.4 // 19 mm (~0.75 in)
+                _appliedLoadLbs.value = 25.0 * 2.20462 // ~55 lbs (~25 kg)
+            } else {
+                _shelfSpanInches.value = 36.0
+                _shelfDepthInches.value = 11.25
+                _shelfThicknessInches.value = 0.75
+                _appliedLoadLbs.value = 60.0
+            }
+            recalculate()
+        }
+    }
+
     private val _selectedSpecies = MutableStateFlow(speciesList[0])
     val selectedSpecies: StateFlow<SagulatorWoodSpecies> = _selectedSpecies.asStateFlow()
 

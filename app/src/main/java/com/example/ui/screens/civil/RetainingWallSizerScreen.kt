@@ -152,7 +152,7 @@ fun RetainingWallSizerScreen(
                                     appendLine("Geogrid Reinforcement: ${state.numGeogridTiers} tiers @ ${String.format("%.1f", state.geogridLengthPerTier)} $uDist length")
                                     appendLine("Total Geogrid Area: ${String.format("%.1f", state.totalGeogridAreaSqYd)} ${if (state.isMetric) "m²" else "sq yd"}")
                                     appendLine("Drainage Stone (#57): ${String.format("%.1f", state.drainageStoneVolumeCuYd)} cu yd (~${String.format("%.1f", state.drainageStoneTons)} tons)")
-                                    appendLine("Estimated Blocks: ${state.totalBlockCount} units (${String.format("%.0f", state.wallFaceAreaSqFt)} sq ft face)")
+                                    appendLine("Estimated Blocks: ${state.totalBlockCount} units (${String.format("%.1f", if (state.isMetric) state.wallFaceAreaSqFt else state.wallFaceAreaSqFt)} ${if (state.isMetric) "m²" else "sq ft"} face)")
                                 }
                                 clipboardManager.setText(AnnotatedString(text))
                                 Toast.makeText(context, "Retaining wall report copied", Toast.LENGTH_SHORT).show()
@@ -550,7 +550,7 @@ fun RetainingWallSizerScreen(
                         RetainingStatBox(
                             title = "Total Wall Blocks",
                             value = "${state.totalBlockCount} units",
-                            subtitle = "${String.format("%.0f", state.wallFaceAreaSqFt)} sq ft face (+10% waste)",
+                            subtitle = "${String.format("%.1f", state.wallFaceAreaSqFt)} ${if (state.isMetric) "m²" else "sq ft"} face (+10% waste)",
                             modifier = Modifier.weight(1f)
                         )
                     }

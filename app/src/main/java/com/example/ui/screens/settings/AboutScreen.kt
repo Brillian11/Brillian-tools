@@ -97,23 +97,102 @@ fun AboutScreen(
             }
         }
 
-        // App Description
+        // Warning Notice Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().testTag("card_rapid_dev_warning")
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(28.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Development Notice",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "This tool is currently at the rapid development stage. It may be non-accurate and requires professional advice before critical on-site execution.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
+                    )
+                }
+            }
+        }
+
+        // App Description (AI Agent-Driven Standpoint)
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.SmartToy, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "AI Agent-Driven Fieldwork Companion",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Text(
-                    text = "Application Overview",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Brillian Tools Suite is a mobile-first, high-precision offline toolkit designed specifically for forestry, woodworking, electrical engineering, masonry, steel preparation, general construction, and on-site industrial paint specialists. Equipped with local AI and real-time hardware telemetry, it is engineered for full operation in off-grid environments.",
+                    text = "Brillian Tools Suite revolutionizes trade work on the field by putting AI agent-driven tools front and center. Field specialists can now instantly solve complex equations, generate lumber optimizations, and analyze coatings with conversational AI assistance, even in 100% offline environments.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        // Standout Features: AI Cutting List & Paint Analyzer
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Standout AI Features",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "• AI Cutting List Optimizer",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Intelligent 1D & 2D stock nesting engine powered by agent heuristics to minimize scrap waste and maximize yield across sheet goods and dimensional lumber.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "• AI Paint & Coating Analyzer",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Advanced coating calculation agent that estimates exact volume requirements, dry film thickness (DFT), and substrate porosity adjustments for commercial and industrial finishes.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
             }
         }
 
@@ -178,7 +257,7 @@ fun AboutScreen(
                 Column {
                     Text(text = "Lead Architect: brillian.dsgn", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                     Text(
-                        text = "A senior systems, UX, and industrial controls developer with over a decade of experience crafting high-reliability field toolkits for remote environment tracking, hardware sensor integration, and high-fidelity Jetpack Compose styling.",
+                        text = "A systems, UX, and industrial controls developer crafting high-reliability field toolkits for remote environment tracking, hardware sensor integration, and high-fidelity Jetpack Compose styling.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 12.dp)

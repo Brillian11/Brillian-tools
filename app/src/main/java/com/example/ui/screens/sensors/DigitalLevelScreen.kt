@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -207,72 +208,74 @@ fun StraightLineLevelGauge(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val cx = w / 2f
         val cy = h / 2f
         val tubeHeight = 36f
         val tubeTop = cy - (tubeHeight / 2f)
 
-        // Draw outer spirit tube background
-        drawRoundRect(
-            color = bgColor,
-            topLeft = Offset(10f, tubeTop),
-            size = Size(w - 20f, tubeHeight),
-            cornerRadius = CornerRadius(18f, 18f)
-        )
-        drawRoundRect(
-            color = lineColor,
-            topLeft = Offset(10f, tubeTop),
-            size = Size(w - 20f, tubeHeight),
-            cornerRadius = CornerRadius(18f, 18f),
-            style = Stroke(width = 3f)
-        )
+        rotate(degrees = -sensorData.rollDegrees, pivot = Offset(cx, cy)) {
+            // Draw outer spirit tube background
+            drawRoundRect(
+                color = bgColor,
+                topLeft = Offset(10f, tubeTop),
+                size = Size(w - 20f, tubeHeight),
+                cornerRadius = CornerRadius(18f, 18f)
+            )
+            drawRoundRect(
+                color = lineColor,
+                topLeft = Offset(10f, tubeTop),
+                size = Size(w - 20f, tubeHeight),
+                cornerRadius = CornerRadius(18f, 18f),
+                style = Stroke(width = 3f)
+            )
 
-        // Draw Center Zero Straight Line Axis across the whole middle
-        drawLine(
-            color = if (isLevel) Color(0xFF2E7D32) else Color(0xFF64748B),
-            start = Offset(20f, cy),
-            end = Offset(w - 20f, cy),
-            strokeWidth = 4f
-        )
+            // Draw Center Zero Straight Line Axis across the whole middle
+            drawLine(
+                color = if (isLevel) Color(0xFF2E7D32) else Color(0xFF64748B),
+                start = Offset(20f, cy),
+                end = Offset(w - 20f, cy),
+                strokeWidth = 4f
+            )
 
-        // Center Target Zone Vertical Tick Lines (0° tolerance boundaries)
-        val cx = w / 2f
-        val zoneWidth = 50f
-        drawLine(
-            color = activeColor,
-            start = Offset(cx - zoneWidth / 2f, tubeTop - 6f),
-            end = Offset(cx - zoneWidth / 2f, tubeTop + tubeHeight + 6f),
-            strokeWidth = 3f
-        )
-        drawLine(
-            color = activeColor,
-            start = Offset(cx + zoneWidth / 2f, tubeTop - 6f),
-            end = Offset(cx + zoneWidth / 2f, tubeTop + tubeHeight + 6f),
-            strokeWidth = 3f
-        )
-        // Center Line Tick
-        drawLine(
-            color = activeColor,
-            start = Offset(cx, tubeTop - 10f),
-            end = Offset(cx, tubeTop + tubeHeight + 10f),
-            strokeWidth = 4f
-        )
+            // Center Target Zone Vertical Tick Lines (0° tolerance boundaries)
+            val zoneWidth = 50f
+            drawLine(
+                color = activeColor,
+                start = Offset(cx - zoneWidth / 2f, tubeTop - 6f),
+                end = Offset(cx - zoneWidth / 2f, tubeTop + tubeHeight + 6f),
+                strokeWidth = 3f
+            )
+            drawLine(
+                color = activeColor,
+                start = Offset(cx + zoneWidth / 2f, tubeTop - 6f),
+                end = Offset(cx + zoneWidth / 2f, tubeTop + tubeHeight + 6f),
+                strokeWidth = 3f
+            )
+            // Center Line Tick
+            drawLine(
+                color = activeColor,
+                start = Offset(cx, tubeTop - 10f),
+                end = Offset(cx, tubeTop + tubeHeight + 10f),
+                strokeWidth = 4f
+            )
 
-        // Calculate horizontal bubble position based on roll angle
-        val clampedRoll = sensorData.rollDegrees.coerceIn(-30f, 30f)
-        val maxOffset = (w / 2f) - 40f
-        val bubbleX = cx + (clampedRoll / 30f) * maxOffset
+            // Calculate horizontal bubble position based on roll angle
+            val clampedRoll = sensorData.rollDegrees.coerceIn(-30f, 30f)
+            val maxOffset = (w / 2f) - 40f
+            val bubbleX = cx + (clampedRoll / 30f) * maxOffset
 
-        // Draw level bubble along horizontal straight line
-        drawCircle(
-            color = activeColor,
-            radius = 16f,
-            center = Offset(bubbleX, cy)
-        )
-        drawCircle(
-            color = Color.White,
-            radius = 6f,
-            center = Offset(bubbleX, cy)
-        )
+            // Draw level bubble along horizontal straight line
+            drawCircle(
+                color = activeColor,
+                radius = 16f,
+                center = Offset(bubbleX, cy)
+            )
+            drawCircle(
+                color = Color.White,
+                radius = 6f,
+                center = Offset(bubbleX, cy)
+            )
+        }
     }
 }
 

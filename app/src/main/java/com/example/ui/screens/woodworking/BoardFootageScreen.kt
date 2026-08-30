@@ -2,8 +2,6 @@ package com.example.ui.screens.woodworking
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,7 +46,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -67,13 +62,18 @@ fun BoardFootageScreen(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
 
-    var labelInput by remember { mutableStateOf("Cabinet Face Frames") }
-    var widthInput by remember { mutableStateOf("6.0") }
-    var lengthFtInput by remember { mutableStateOf("8.0") }
-    var qtyInput by remember { mutableStateOf("4") }
+    var itemLabel by remember { mutableStateOf("") }
+    var thicknessInput by remember { mutableStateOf(if (state.isMetric) String.format("%.1f", state.thicknessInches * 25.4) else state.thicknessInches.toString()) }
+    var widthInput by remember { mutableStateOf(if (state.isMetric) String.format("%.1f", state.widthInches * 25.4) else state.widthInches.toString()) }
+    var lengthInput by remember { mutableStateOf(if (state.isMetric) String.format("%.2f", state.lengthFeet / 3.28084) else state.lengthFeet.toString()) }
+    var quantityInput by remember { mutableStateOf(state.quantity.toString()) }
     var priceInput by remember { mutableStateOf(state.customPricePerBF.toString()) }
 
-    val quarterOptions = listOf("4/4 (1.0\")", "5/4 (1.25\")", "6/4 (1.5\")", "8/4 (2.0\")", "10/4 (2.5\")", "12/4 (3.0\")")
+    androidx.compose.runtime.LaunchedEffect(state.isMetric) {
+        thicknessInput = if (state.isMetric) String.format("%.1f", state.thicknessInches * 25.4) else state.thicknessInches.toString()
+        widthInput = if (state.isMetric) String.format("%.1f", state.widthInches * 25.4) else state.widthInches.toString()
+        lengthInput = if (state.isMetric) String.format("%.2f", state.lengthFeet / 3.28084) else state.lengthFeet.toString()
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -113,13 +113,12 @@ fun BoardFootageScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Board Footage & Lumber Estimator",
+                            text = "Lumber Board Feet & Metric Volume",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Volume in Board Feet (T\" x W\" x L' / 12), species pricing & waste contingency",
+                            text = if (state.isMetric) "Calculate wood volume in Cubic Meters (m³) & Metric Timber Mass (kg)" else "Calculate Board Feet (BF), lumber cost & dry weight (lbs)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -127,66 +126,27 @@ fun BoardFootageScreen(
                 }
             }
 
-            // Species Selector Chips
+             // Info & Description Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "SELECT WOOD SPECIES",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        text = if (state.isMetric)
+                            "Metric Lumber Rule: 1 m³ = 1,000,000 cm³ = ~423.7 Board Feet. Dimensions are entered in millimeters (mm) and length in meters (m)."
+                        else
+                            "Standard Lumber Rule: 1 Board Foot = 12\" x 12\" x 1\" (144 cu in). 4/4 = 1.0\", 8/4 = 2.0\".",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(state.speciesList) { species ->
-                            FilterChip(
-                                selected = state.selectedSpecies.name == species.name,
-                                onClick = {
-                                    viewModel.selectSpecies(species)
-                                    priceInput = species.defaultPricePerBF.toString()
-                                },
-                                label = { Text("${species.name} ($${String.format("%.2f", species.defaultPricePerBF)}/BF)") }
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Density: ${state.selectedSpecies.densityLbsPerCuFt} lbs/cu.ft | Janka Hardness: ${state.selectedSpecies.jankaHardnessLbf} lbf",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
 
-            // Quick Thickness Selector
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "ROUGH LUMBER THICKNESS (QUARTERS)",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    )
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(quarterOptions) { quarter ->
-                            FilterChip(
-                                selected = state.inputThicknessQuarter == quarter,
-                                onClick = { viewModel.setThicknessQuarter(quarter) },
-                                label = { Text(quarter) }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Dimension Input Card
+            // Inputs Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
@@ -197,128 +157,142 @@ fun BoardFootageScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "BOARD DIMENSIONS & QUANTITY",
+                        text = "ADD LUMBER ITEM",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     )
 
                     OutlinedTextField(
-                        value = labelInput,
-                        onValueChange = { labelInput = it },
-                        label = { Text("Part / Board Label") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        value = itemLabel,
+                        onValueChange = { itemLabel = it },
+                        label = { Text("Description / Part Name (e.g. Table Top)") },
+                        modifier = Modifier.fillMaxWidth()
                     )
 
+                    // Quarter / Metric Thickness Presets
+                    Text(
+                        text = if (state.isMetric) "Standard Metric Rough Thickness (mm):" else "Standard Rough Quarter Thickness:",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+                    )
+
+                    val quarterChips = if (state.isMetric) {
+                        listOf("25mm (4/4)", "32mm (5/4)", "38mm (6/4)", "50mm (8/4)", "63mm (10/4)", "75mm (12/4)", "100mm (16/4)")
+                    } else {
+                        listOf("4/4 (1.0\")", "5/4 (1.25\")", "6/4 (1.5\")", "8/4 (2.0\")", "10/4 (2.5\")", "12/4 (3.0\")", "16/4 (4.0\")")
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        quarterChips.chunked(4).forEach { rowChips ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                rowChips.forEach { chip ->
+                                    FilterChip(
+                                        selected = state.inputThicknessQuarter == chip,
+                                        onClick = {
+                                            viewModel.setThicknessQuarter(chip)
+                                            thicknessInput = if (state.isMetric) String.format("%.1f", state.thicknessInches * 25.4) else state.thicknessInches.toString()
+                                        },
+                                        label = { Text(chip, fontSize = 10.sp) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = thicknessInput,
+                            onValueChange = {
+                                thicknessInput = it
+                                val t = it.toDoubleOrNull() ?: 1.0
+                                val w = widthInput.toDoubleOrNull() ?: 6.0
+                                val l = lengthInput.toDoubleOrNull() ?: 8.0
+                                val q = quantityInput.toIntOrNull() ?: 1
+                                val p = priceInput.toDoubleOrNull() ?: 12.50
+                                viewModel.updateDimensions(t, w, l, q, p)
+                            },
+                            label = { Text(if (state.isMetric) "Thick (mm)" else "Thick (in)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = widthInput,
                             onValueChange = {
                                 widthInput = it
+                                val t = thicknessInput.toDoubleOrNull() ?: 1.0
                                 val w = it.toDoubleOrNull() ?: 6.0
-                                val l = lengthFtInput.toDoubleOrNull() ?: 8.0
-                                val q = qtyInput.toIntOrNull() ?: 1
-                                val p = priceInput.toDoubleOrNull() ?: 10.0
-                                viewModel.updateDimensions(state.thicknessInches, w, l, q, p)
+                                val l = lengthInput.toDoubleOrNull() ?: 8.0
+                                val q = quantityInput.toIntOrNull() ?: 1
+                                val p = priceInput.toDoubleOrNull() ?: 12.50
+                                viewModel.updateDimensions(t, w, l, q, p)
                             },
-                            label = { Text("Width (in)") },
+                            label = { Text(if (state.isMetric) "Width (mm)" else "Width (in)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
-                            value = lengthFtInput,
+                            value = lengthInput,
                             onValueChange = {
-                                lengthFtInput = it
+                                lengthInput = it
+                                val t = thicknessInput.toDoubleOrNull() ?: 1.0
                                 val w = widthInput.toDoubleOrNull() ?: 6.0
                                 val l = it.toDoubleOrNull() ?: 8.0
-                                val q = qtyInput.toIntOrNull() ?: 1
-                                val p = priceInput.toDoubleOrNull() ?: 10.0
-                                viewModel.updateDimensions(state.thicknessInches, w, l, q, p)
+                                val q = quantityInput.toIntOrNull() ?: 1
+                                val p = priceInput.toDoubleOrNull() ?: 12.50
+                                viewModel.updateDimensions(t, w, l, q, p)
                             },
-                            label = { Text("Length (ft)") },
+                            label = { Text(if (state.isMetric) "Length (m)" else "Length (ft)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = qtyInput,
-                            onValueChange = {
-                                qtyInput = it
-                                val w = widthInput.toDoubleOrNull() ?: 6.0
-                                val l = lengthFtInput.toDoubleOrNull() ?: 8.0
-                                val q = it.toIntOrNull() ?: 1
-                                val p = priceInput.toDoubleOrNull() ?: 10.0
-                                viewModel.updateDimensions(state.thicknessInches, w, l, q, p)
-                            },
-                            label = { Text("Qty") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(0.8f)
                         )
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = quantityInput,
+                            onValueChange = {
+                                quantityInput = it
+                                val t = thicknessInput.toDoubleOrNull() ?: 1.0
+                                val w = widthInput.toDoubleOrNull() ?: 6.0
+                                val l = lengthInput.toDoubleOrNull() ?: 8.0
+                                val q = it.toIntOrNull() ?: 1
+                                val p = priceInput.toDoubleOrNull() ?: 12.50
+                                viewModel.updateDimensions(t, w, l, q, p)
+                            },
+                            label = { Text("Quantity") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = priceInput,
                             onValueChange = {
                                 priceInput = it
+                                val t = thicknessInput.toDoubleOrNull() ?: 1.0
                                 val w = widthInput.toDoubleOrNull() ?: 6.0
-                                val l = lengthFtInput.toDoubleOrNull() ?: 8.0
-                                val q = qtyInput.toIntOrNull() ?: 1
-                                val p = it.toDoubleOrNull() ?: 10.0
-                                viewModel.updateDimensions(state.thicknessInches, w, l, q, p)
+                                val l = lengthInput.toDoubleOrNull() ?: 8.0
+                                val q = quantityInput.toIntOrNull() ?: 1
+                                val p = it.toDoubleOrNull() ?: 12.50
+                                viewModel.updateDimensions(t, w, l, q, p)
                             },
-                            label = { Text("Price per BF ($)") },
+                            label = { Text(if (state.isMetric) "Price / m³ ($)" else "Price / BF ($)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         )
+                    }
 
-                        Button(
-                            onClick = {
-                                viewModel.addLumberItem(labelInput)
-                                labelInput = "Board #${state.lumberList.size + 2}"
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .height(56.dp)
-                                .testTag("add_board_button")
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Board")
-                        }
+                    Button(
+                        onClick = {
+                            viewModel.addLumberItem(itemLabel)
+                            itemLabel = ""
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add to Cut List")
                     }
                 }
             }
 
-            // Waste Percentage Toggle
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "WASTE & DEFECT CONTINGENCY FACTOR",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(0.0, 10.0, 15.0, 20.0, 25.0).forEach { waste ->
-                            FilterChip(
-                                selected = state.wastePercentage == waste,
-                                onClick = { viewModel.setWastePercentage(waste) },
-                                label = { Text("+${waste.toInt()}%") }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Summary Totals Banner
+            // Summary Banners
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
@@ -332,22 +306,21 @@ fun BoardFootageScreen(
                         text = "PROJECT LUMBER TOTALS",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     )
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Net Board Feet", style = MaterialTheme.typography.labelSmall)
+                            Text(if (state.isMetric) "Net Volume (m³)" else "Net Board Feet", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "${String.format("%.1f", state.totalBoardFeetNet)} BF",
+                                text = if (state.isMetric) "${String.format("%.4f", state.totalBoardFeetNet * 0.00235974)} m³" else "${String.format("%.1f", state.totalBoardFeetNet)} BF",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
                             )
                         }
                         Column {
-                            Text("Gross (with ${state.wastePercentage.toInt()}% waste)", style = MaterialTheme.typography.labelSmall)
+                            Text("Gross (+${state.wastePercentage.toInt()}% waste)", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "${String.format("%.1f", state.totalBoardFeetWithWaste)} BF",
+                                text = if (state.isMetric) "${String.format("%.4f", state.totalBoardFeetWithWaste * 0.00235974)} m³" else "${String.format("%.1f", state.totalBoardFeetWithWaste)} BF",
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace,
@@ -367,16 +340,18 @@ fun BoardFootageScreen(
                             )
                         }
                     }
-
                     Text(
-                        text = "Estimated Total Dry Weight: ~${String.format("%.1f", state.totalEstimatedWeightLbs)} lbs",
+                        text = if (state.isMetric)
+                            "Estimated Total Dry Weight: ~${String.format("%.1f", state.totalEstimatedWeightLbs * 0.453592)} kg"
+                        else
+                            "Estimated Total Dry Weight: ~${String.format("%.1f", state.totalEstimatedWeightLbs)} lbs",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // Itemized Lumber Cut List
+            // Cut List Table
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
@@ -386,26 +361,10 @@ fun BoardFootageScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "LUMBER CUT LIST (${state.lumberList.size} ITEMS)",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        )
-                        IconButton(onClick = {
-                            val listText = state.lumberList.joinToString("\n") { item ->
-                                "${item.quantity}x ${item.label} (${item.species}): ${item.thicknessInches}\" x ${item.widthInches}\" x ${item.lengthFeet}' -> ${String.format("%.1f", item.boardFeet)} BF ($${String.format("%.2f", item.itemCost)})"
-                            } + "\n\nTotal Gross BF (${state.wastePercentage.toInt()}% waste): ${String.format("%.1f", state.totalBoardFeetWithWaste)} BF\nTotal Cost: $${String.format("%.2f", state.totalLumberCost)}"
-                            clipboardManager.setText(AnnotatedString(listText))
-                            Toast.makeText(context, "Copied Lumber Cut List!", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy")
-                        }
-                    }
-
+                    Text(
+                        text = "LUMBER CUT LIST (${state.lumberList.size} ITEMS)",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    )
                     state.lumberList.forEach { item ->
                         Surface(
                             color = MaterialTheme.colorScheme.surface,
@@ -433,12 +392,18 @@ fun BoardFootageScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(item.label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                                     Text(
-                                        text = "${item.species} • ${item.thicknessInches}\" x ${item.widthInches}\" x ${item.lengthFeet}'",
+                                        text = if (state.isMetric)
+                                            "${item.species} • ${String.format("%.0f", item.thicknessInches * 25.4)}mm x ${String.format("%.0f", item.widthInches * 25.4)}mm x ${String.format("%.2f", item.lengthFeet / 3.28084)}m"
+                                        else
+                                            "${item.species} • ${item.thicknessInches}\" x ${item.widthInches}\" x ${item.lengthFeet}'",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Text(
-                                        text = "${String.format("%.1f", item.boardFeet)} BF • $${String.format("%.2f", item.itemCost)}",
+                                        text = if (state.isMetric)
+                                            "${String.format("%.4f", item.boardFeet * 0.00235974)} m³ (${String.format("%.1f", item.weightLbs * 0.453592)} kg) • $${String.format("%.2f", item.itemCost)}"
+                                        else
+                                            "${String.format("%.1f", item.boardFeet)} BF (${String.format("%.1f", item.weightLbs)} lbs) • $${String.format("%.2f", item.itemCost)}",
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.primary
                                     )

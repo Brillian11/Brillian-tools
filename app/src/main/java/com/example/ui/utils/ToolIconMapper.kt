@@ -3,12 +3,14 @@ package com.example.ui.utils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Architecture
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.DeviceThermostat
 import androidx.compose.material.icons.filled.ElectricMeter
@@ -26,19 +28,27 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PrecisionManufacturing
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SettingsRemote
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SquareFoot
 import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Terrain
+import androidx.compose.material.icons.filled.Texture
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Water
 import androidx.compose.material.icons.filled.WaterDrop
@@ -101,6 +111,56 @@ object ToolIconMapper {
                 icon = Icons.Default.TableChart,
                 containerColor = Color(0xFFDCFCE7),
                 contentColor = Color(0xFF15803D)
+            )
+            "widget_segmented_turning" -> ToolVisuals(
+                icon = Icons.Default.RotateRight,
+                containerColor = Color(0xFFFEF3C7),
+                contentColor = Color(0xFFB45309)
+            )
+            "widget_sagulator" -> ToolVisuals(
+                icon = Icons.Default.Straighten,
+                containerColor = Color(0xFFFFEDD5),
+                contentColor = Color(0xFFC2410C)
+            )
+            "widget_grain_matching" -> ToolVisuals(
+                icon = Icons.Default.Texture,
+                containerColor = Color(0xFFFEF9C3),
+                contentColor = Color(0xFFA16207)
+            )
+            "widget_drill_tap_chart" -> ToolVisuals(
+                icon = Icons.Default.Construction,
+                containerColor = Color(0xFFE2E8F0),
+                contentColor = Color(0xFF334155)
+            )
+            "widget_blade_speed" -> ToolVisuals(
+                icon = Icons.Default.Speed,
+                containerColor = Color(0xFFE0E7FF),
+                contentColor = Color(0xFF3730A3)
+            )
+            "widget_wood_species_studio" -> ToolVisuals(
+                icon = Icons.Default.MenuBook,
+                containerColor = Color(0xFFFEF3C7),
+                contentColor = Color(0xFF92400E)
+            )
+            "widget_plumb_bob" -> ToolVisuals(
+                icon = Icons.Default.Architecture,
+                containerColor = Color(0xFFD1FAE5),
+                contentColor = Color(0xFF047857)
+            )
+            "widget_stud_detector" -> ToolVisuals(
+                icon = Icons.Default.Sensors,
+                containerColor = Color(0xFFE0F2FE),
+                contentColor = Color(0xFF0369A1)
+            )
+            "widget_laser_measure" -> ToolVisuals(
+                icon = Icons.Default.Bluetooth,
+                containerColor = Color(0xFFDBEAFE),
+                contentColor = Color(0xFF1D4ED8)
+            )
+            "widget_painting_coating_studio" -> ToolVisuals(
+                icon = Icons.Default.Palette,
+                containerColor = Color(0xFFFCE7F3),
+                contentColor = Color(0xFFBE185D)
             )
 
             // Electrical & Electronics Suite
@@ -347,10 +407,25 @@ object ToolIconMapper {
                 containerColor = Color(0xFFD1FAE5),
                 contentColor = Color(0xFF059669)
             )
-            "widget_jobsite_ir_remote", "SettingsRemote" -> ToolVisuals(
+            "widget_jobsite_ir_remote", "widget_ir_remote", "SettingsRemote" -> ToolVisuals(
                 icon = Icons.Default.ElectricMeter,
                 containerColor = Color(0xFFDCFCE7),
                 contentColor = Color(0xFF166534)
+            )
+            "widget_usb_pro_camera" -> ToolVisuals(
+                icon = Icons.Default.Camera,
+                containerColor = Color(0xFFE0F2FE),
+                contentColor = Color(0xFF0284C7)
+            )
+            "widget_qr_code_scanner" -> ToolVisuals(
+                icon = Icons.Default.Explore,
+                containerColor = Color(0xFFECFDF5),
+                contentColor = Color(0xFF047857)
+            )
+            "widget_outdoor_activities", "Terrain" -> ToolVisuals(
+                icon = Icons.Default.Terrain,
+                containerColor = Color(0xFFFEF3C7),
+                contentColor = Color(0xFFB45309)
             )
 
             // Field Engineering & Meteorology Suite
@@ -432,6 +507,133 @@ object ToolIconMapper {
                 icon = Icons.Default.Architecture,
                 containerColor = Color(0xFFFFF7ED),
                 contentColor = Color(0xFFC2410C)
+            )
+
+            // Differentiated Metalworks, Welding, and Pipe Sizing Suite (82 to 106)
+            "widget_weld_heat_input" -> ToolVisuals(
+                icon = Icons.Default.FlashOn,
+                containerColor = Color(0xFFFFFBEB),
+                contentColor = Color(0xFFD97706)
+            )
+            "widget_weld_carbon_equivalent" -> ToolVisuals(
+                icon = Icons.Default.Science,
+                containerColor = Color(0xFFF0FDF4),
+                contentColor = Color(0xFF16A34A)
+            )
+            "widget_weld_electrode_selector" -> ToolVisuals(
+                icon = Icons.Default.Construction,
+                containerColor = Color(0xFFFAF5FF),
+                contentColor = Color(0xFF9333EA)
+            )
+            "widget_weld_deposition_estimator" -> ToolVisuals(
+                icon = Icons.Default.Calculate,
+                containerColor = Color(0xFFECFDF5),
+                contentColor = Color(0xFF059669)
+            )
+            "widget_weld_shielding_gas" -> ToolVisuals(
+                icon = Icons.Default.Grain,
+                containerColor = Color(0xFFEFF6FF),
+                contentColor = Color(0xFF2563EB)
+            )
+            "widget_metal_k_factor" -> ToolVisuals(
+                icon = Icons.Default.Straighten,
+                containerColor = Color(0xFFFFF7ED),
+                contentColor = Color(0xFFEA580C)
+            )
+            "widget_metal_bend_deduction" -> ToolVisuals(
+                icon = Icons.Default.Architecture,
+                containerColor = Color(0xFFFEF2F2),
+                contentColor = Color(0xFFDC2626)
+            )
+            "widget_metal_press_brake_tonnage" -> ToolVisuals(
+                icon = Icons.Default.Speed,
+                containerColor = Color(0xFFFFFBEB),
+                contentColor = Color(0xFFD97706)
+            )
+            "widget_metal_cone_unfolder" -> ToolVisuals(
+                icon = Icons.Default.Layers,
+                containerColor = Color(0xFFF5F5F5),
+                contentColor = Color(0xFF4B5563)
+            )
+            "widget_metal_square_to_round" -> ToolVisuals(
+                icon = Icons.Default.Category,
+                containerColor = Color(0xFFECFDF5),
+                contentColor = Color(0xFF047857)
+            )
+            "widget_pipe_miter_saddle" -> ToolVisuals(
+                icon = Icons.Default.ContentCut,
+                containerColor = Color(0xFFFFF7ED),
+                contentColor = Color(0xFFEA580C)
+            )
+            "widget_pipe_rolling_offset" -> ToolVisuals(
+                icon = Icons.Default.Navigation,
+                containerColor = Color(0xFFEFF6FF),
+                contentColor = Color(0xFF2563EB)
+            )
+            "widget_pipe_flange_pcd" -> ToolVisuals(
+                icon = Icons.Default.GridOn,
+                containerColor = Color(0xFFFAF5FF),
+                contentColor = Color(0xFF7C3AED)
+            )
+            "widget_pipe_orange_peel" -> ToolVisuals(
+                icon = Icons.Default.Grain,
+                containerColor = Color(0xFFF1F5F9),
+                contentColor = Color(0xFF334155)
+            )
+            "widget_metal_thermal_distortion" -> ToolVisuals(
+                icon = Icons.Default.DeviceThermostat,
+                containerColor = Color(0xFFFEF2F2),
+                contentColor = Color(0xFFDC2626)
+            )
+            "widget_metal_structural_profiles" -> ToolVisuals(
+                icon = Icons.Default.HomeWork,
+                containerColor = Color(0xFFF0FDF4),
+                contentColor = Color(0xFF15803D)
+            )
+            "widget_metal_plasma_cutting" -> ToolVisuals(
+                icon = Icons.Default.FlashOn,
+                containerColor = Color(0xFFFFFBEB),
+                contentColor = Color(0xFFD97706)
+            )
+            "widget_metal_flame_straightening" -> ToolVisuals(
+                icon = Icons.Default.Engineering,
+                containerColor = Color(0xFFFAF5FF),
+                contentColor = Color(0xFF9333EA)
+            )
+            "widget_weld_fillet_throat" -> ToolVisuals(
+                icon = Icons.Default.Straighten,
+                containerColor = Color(0xFFECFDF5),
+                contentColor = Color(0xFF059669)
+            )
+            "widget_weld_defects" -> ToolVisuals(
+                icon = Icons.Default.CheckCircle,
+                containerColor = Color(0xFFFEF2F2),
+                contentColor = Color(0xFFDC2626)
+            )
+            "widget_weld_symbol_decoder" -> ToolVisuals(
+                icon = Icons.Default.Architecture,
+                containerColor = Color(0xFFEFF6FF),
+                contentColor = Color(0xFF2563EB)
+            )
+            "widget_weld_schaeffler" -> ToolVisuals(
+                icon = Icons.Default.Science,
+                containerColor = Color(0xFFFFFBEB),
+                contentColor = Color(0xFFD97706)
+            )
+            "widget_metal_surface_flatness" -> ToolVisuals(
+                icon = Icons.Default.GridOn,
+                containerColor = Color(0xFFF5F5F5),
+                contentColor = Color(0xFF4B5563)
+            )
+            "widget_weld_tungsten_grind" -> ToolVisuals(
+                icon = Icons.Default.Palette,
+                containerColor = Color(0xFFFDF2F8),
+                contentColor = Color(0xFFDB2777)
+            )
+            "widget_pipe_hydro_test" -> ToolVisuals(
+                icon = Icons.Default.Water,
+                containerColor = Color(0xFFE0F2FE),
+                contentColor = Color(0xFF0284C7)
             )
 
             else -> ToolVisuals(

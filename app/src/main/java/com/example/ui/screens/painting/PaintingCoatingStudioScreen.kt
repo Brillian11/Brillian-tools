@@ -1,7 +1,9 @@
 package com.example.ui.screens.painting
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import java.util.Locale
 import kotlin.math.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -105,7 +108,7 @@ fun PaintingCoatingStudioScreen(
             }
         }
 
-        // 7 Category Tabs (Scrollable)
+        // 9 Category Tabs (Scrollable)
         ScrollableTabRow(
             selectedTabIndex = activeTab,
             edgePadding = 0.dp,
@@ -118,7 +121,9 @@ fun PaintingCoatingStudioScreen(
                 "Climate Curing",
                 "Wood Finish",
                 "Metal Rust",
-                "Wall & Plaster"
+                "Wall & Plaster",
+                "Laminates & HPL",
+                "Color Match & Brands"
             )
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -138,6 +143,8 @@ fun PaintingCoatingStudioScreen(
             4 -> TabWoodFinishing(viewModel, isImperial)
             5 -> TabMetalAndRust(viewModel, isImperial)
             6 -> TabWallAndMasonry(viewModel, isImperial)
+            7 -> TabLaminatesAndFilms(viewModel, isImperial)
+            8 -> TabColorRecommendations(viewModel)
         }
     }
 }
@@ -1444,6 +1451,522 @@ fun TabWallAndMasonry(viewModel: PaintingCoatingStudioViewModel, isImperial: Boo
                 Row(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer).padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Cartridges / Sausages Needed:")
                     Text("$cartridgesNeeded Tubes", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+// ==================== TAB 8: LAMINATES, HPL & ARCHITECTURAL INTERIOR FILMS ====================
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun TabLaminatesAndFilms(viewModel: PaintingCoatingStudioViewModel, isImperial: Boolean) {
+    val materialCat by viewModel.laminateMaterialCategory.collectAsState()
+    val pattern by viewModel.laminateTexturePattern.collectAsState()
+    val lengthStr by viewModel.laminateSurfaceLength.collectAsState()
+    val widthStr by viewModel.laminateSurfaceWidth.collectAsState()
+    val qtyStr by viewModel.laminateQuantity.collectAsState()
+    val wasteStr by viewModel.laminateWastePercent.collectAsState()
+    val edgeLenStr by viewModel.edgeBandingLength.collectAsState()
+    val edgeWidStr by viewModel.edgeBandingWidth.collectAsState()
+    val edgeThickStr by viewModel.edgeBandingThickness.collectAsState()
+    val adhesiveType by viewModel.adhesiveGlueType.collectAsState()
+
+    val categories = listOf(
+        "HPL (High Pressure Laminate - Taco Brand)",
+        "Kertasive Architectural Interior Film",
+        "Vinyl Wrap / Laminated Sticker",
+        "Melamine / PVC Film",
+        "Acrylic High Gloss Sheet"
+    )
+
+    val patterns = when {
+        materialCat.contains("Taco") || materialCat.contains("HPL") -> listOf(
+            "Taco Woodgrain Natural Oak",
+            "Taco Warm Teak & Walnut",
+            "Taco Solid Silk Super Matte",
+            "Taco High Gloss Pure White",
+            "Taco Concrete & Industrial Stone",
+            "Taco Fabric & Linen Texture"
+        )
+        materialCat.contains("Kertasive") -> listOf(
+            "Kertasive Solid Warm Off-White",
+            "Kertasive Scandinavian Oak Film",
+            "Kertasive Calacatta Gold Marble",
+            "Kertasive Rust Industrial Cement",
+            "Kertasive Leather & Suede Film"
+        )
+        else -> listOf(
+            "Architectural Matte Decal",
+            "High Gloss Vehicle/Cabinetry Vinyl",
+            "Brushed Metallic Silver / Gold",
+            "Carbon Fiber Textured Vinyl"
+        )
+    }
+
+    val adhesives = listOf(
+        "Contact Cement / Yellow Glue (Fox / Aibon)",
+        "Water-based Contact Adhesive",
+        "Hot Melt EVA Glue (Edgebander)",
+        "3M Primer 94 (Kertasive/Vinyl)"
+    )
+
+    val length = lengthStr.toDoubleOrNull() ?: 2400.0
+    val width = widthStr.toDoubleOrNull() ?: 600.0
+    val qty = qtyStr.toIntOrNull() ?: 1
+    val waste = (wasteStr.toDoubleOrNull() ?: 15.0) / 100.0
+    val edgeLen = edgeLenStr.toDoubleOrNull() ?: 0.0
+
+    // Standard Sheet Size: 1220 x 2440 mm (4 x 8 ft) = 2.9768 m²
+    val singleSurfaceAreaM2 = (length * width) / 1000000.0
+    val totalSurfaceAreaM2 = singleSurfaceAreaM2 * qty
+    val totalAreaWithWasteM2 = totalSurfaceAreaM2 * (1.0 + waste)
+
+    val standardSheetAreaM2 = 1.22 * 2.44 // ~2.977 m2
+    val sheetsNeeded = ceil(totalAreaWithWasteM2 / standardSheetAreaM2).toInt().coerceAtLeast(1)
+    val yieldPercentage = ((totalSurfaceAreaM2 / (sheetsNeeded * standardSheetAreaM2)) * 100.0).coerceIn(0.0, 100.0)
+
+    // Adhesive Coverage: Contact cement requires ~0.20 kg / m² on both surface + substrate (double-sided application)
+    val adhesiveKgNeeded = totalSurfaceAreaM2 * 2.0 * 0.12 // 0.24 kg/m2 total
+    val adhesiveLitersNeeded = adhesiveKgNeeded / 0.88 // Density of contact cement ~0.88 kg/L
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+        // Card 1: Material & Finish Brand Selection
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Layers, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("1. Laminated Material & Brand Selector", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+
+                Text("Finish Category:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    categories.forEach { cat ->
+                        FilterChip(
+                            selected = materialCat == cat,
+                            onClick = { 
+                                viewModel.laminateMaterialCategory.value = cat 
+                                viewModel.laminateTexturePattern.value = if (cat.contains("Kertasive")) "Kertasive Scandinavian Oak Film" else "Taco Woodgrain Natural Oak"
+                            },
+                            label = { Text(cat) }
+                        )
+                    }
+                }
+
+                Text("Texture & Pattern Variety:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    patterns.forEach { pat ->
+                        FilterChip(
+                            selected = pattern == pat,
+                            onClick = { viewModel.laminateTexturePattern.value = pat },
+                            label = { Text(pat) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Card 2: Surface Dimensions & Sheet Yield Sizer
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Straighten, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("2. Surface Area & Sheet Sizing (1220 × 2440 mm)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = lengthStr,
+                        onValueChange = { viewModel.laminateSurfaceLength.value = it },
+                        label = { Text("Length (mm)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    OutlinedTextField(
+                        value = widthStr,
+                        onValueChange = { viewModel.laminateSurfaceWidth.value = it },
+                        label = { Text("Width (mm)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = qtyStr,
+                        onValueChange = { viewModel.laminateQuantity.value = it },
+                        label = { Text("Panel Qty") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    OutlinedTextField(
+                        value = wasteStr,
+                        onValueChange = { viewModel.laminateWastePercent.value = it },
+                        label = { Text("Waste Margin (%)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+
+                HorizontalDivider()
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Net Surface Area:")
+                        Text(String.format(Locale.US, "%.2f m² (%.1f sq ft)", totalSurfaceAreaM2, totalSurfaceAreaM2 * 10.7639), fontWeight = FontWeight.Bold)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Standard 4×8 ft Sheets Required:")
+                        Text("$sheetsNeeded Sheet${if (sheetsNeeded > 1) "s" else ""}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Material Yield / Utilization:")
+                        Text(String.format(Locale.US, "%.1f%%", yieldPercentage), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+
+        // Card 3: Edge Banding & Adhesive Requirement
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FormatPaint, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("3. Edge Banding & Contact Adhesive", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = edgeLenStr,
+                        onValueChange = { viewModel.edgeBandingLength.value = it },
+                        label = { Text("Edge Perimeter (m)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    OutlinedTextField(
+                        value = edgeWidStr,
+                        onValueChange = { viewModel.edgeBandingWidth.value = it },
+                        label = { Text("Width (mm)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+
+                Text("Adhesive / Bonding Compound:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    adhesives.forEach { adh ->
+                        FilterChip(
+                            selected = adhesiveType == adh,
+                            onClick = { viewModel.adhesiveGlueType.value = adh },
+                            label = { Text(adh) }
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Contact Adhesive (Fox / Aibon):")
+                        Text(String.format(Locale.US, "%.2f kg (%.2f L)", adhesiveKgNeeded, adhesiveLitersNeeded), fontWeight = FontWeight.Bold)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Edge Banding Roll Needed:")
+                        Text("${ceil(edgeLen * 1.1).toInt()} meters (incl. 10% trim)", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // Card 4: Pro Craft Application Best Practices Guide
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Professional Installation Steps for $materialCat:",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "1. Substrate Prep: Sand MDF / Plywood with 180-grit to eliminate dust and burrs.\n" +
+                           "2. Glue Application: Spread contact cement evenly on both plywood and HPL using a notched spreader.\n" +
+                           "3. Tack Time: Allow 10–15 minutes until tacky (dry to touch, no strings on finger).\n" +
+                           "4. Alignment: Use timber dowels as spacers, then press from center outward using a J-roller to remove trapped air bubbles.\n" +
+                           "5. Trimming: Flush trim edges using a carbide-tipped laminate trimmer router bit (bevel 15°–22°).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+
+// ==================== TAB 9: COLOR RECOMMENDATIONS & COMBINATION SCORE ====================
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun TabColorRecommendations(viewModel: PaintingCoatingStudioViewModel) {
+    val selectedVibe by viewModel.selectedCozyVibe.collectAsState()
+    val selectedBrand by viewModel.selectedCommercialBrand.collectAsState()
+
+    val vibes = listOf(
+        "Warm Hygge",
+        "Rustic Cabin",
+        "Classic Elegance",
+        "Coastal Calm",
+        "Forest Retreat",
+        "Modern Industrial",
+        "High Gloss Luxury"
+    )
+    val brands = listOf(
+        "Sherwin-Williams",
+        "Benjamin Moore",
+        "Jotun",
+        "Nippon Paint",
+        "Duco / Danagloss",
+        "Propan",
+        "Avian Brands",
+        "Dulux"
+    )
+
+    fun parseColorHex(hex: String): Color {
+        return try {
+            Color(android.graphics.Color.parseColor(hex))
+        } catch (e: Exception) {
+            Color.LightGray
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Vibe Picker Card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "1. Select Desired Ambience / Vibe",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    vibes.forEach { vibe ->
+                        FilterChip(
+                            selected = selectedVibe == vibe,
+                            onClick = { viewModel.selectedCozyVibe.value = vibe },
+                            label = { Text(vibe) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Brand Picker Card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "2. Select Commercial Brand",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    brands.forEach { brand ->
+                        FilterChip(
+                            selected = selectedBrand == brand,
+                            onClick = { viewModel.selectedCommercialBrand.value = brand },
+                            label = { Text(brand) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Filter and display matching palettes
+        val matchedPalettes = viewModel.commercialPalettes.filter {
+            it.category == selectedVibe && it.brand == selectedBrand
+        }
+
+        if (matchedPalettes.isEmpty()) {
+            // General matching fallback from selected brand
+            val brandFallback = viewModel.commercialPalettes.filter { it.brand == selectedBrand }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No direct match for '$selectedVibe' in '$selectedBrand'. Showing alternative ideal option below:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    brandFallback.forEach { palette ->
+                        PaletteCard(palette = palette, onParse = { parseColorHex(it) })
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+            }
+        } else {
+            matchedPalettes.forEach { palette ->
+                PaletteCard(palette = palette, onParse = { parseColorHex(it) })
+            }
+        }
+    }
+}
+
+@Composable
+fun PaletteCard(
+    palette: PaintingCoatingStudioViewModel.ColorRecommendation,
+    onParse: (String) -> Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Title & Brand
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = palette.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${palette.brand} • ${palette.category}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Combination Score Badge
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = if (palette.score >= 95) Color(0xFFDCFCE7) else Color(0xFFFEF9C3),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Match Score: ${palette.score}%",
+                        color = if (palette.score >= 95) Color(0xFF15803D) else Color(0xFF854D0E),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Swatches Rendering
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Base Color Swatch
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                            .background(onParse(palette.baseHex), shape = RoundedCornerShape(12.dp))
+                            .border(1.dp, Color.Gray.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Base: " + palette.baseName,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = palette.baseHex,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Accent Color Swatch
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                            .background(onParse(palette.accentHex), shape = RoundedCornerShape(12.dp))
+                            .border(1.dp, Color.Gray.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Accent: " + palette.accentName,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = palette.accentHex,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Description
+            Text(
+                text = palette.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 18.sp
+            )
+
+            // Ideal Formula Metrics Breakdown
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Contrast Ratio", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("4.8:1 (Ideal)", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Warmth Level", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Comfort Warm", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Cozy Index", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("★ ★ ★ ★ ★", style = MaterialTheme.typography.bodySmall, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -211,6 +211,10 @@ class ArAreaCalculatorViewModel(context: Context) : ViewModel(), SensorEventList
         _state.update { it.copy(isMetric = !it.isMetric) }
     }
 
+    fun setUnitSystem(metric: Boolean) {
+        _state.update { it.copy(isMetric = metric) }
+    }
+
     private fun recalculateGeometry() {
         val pts = _state.value.points
         if (pts.size < 3) {

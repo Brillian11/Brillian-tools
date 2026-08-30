@@ -63,6 +63,11 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PrecisionManufacturing
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.domain.model.ToolDefinition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
@@ -131,115 +136,128 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Minimized Material You Weather, Location & Geographical Meters Widget
-            MaterialYouWeatherWidget(
-                userSettings = userSettings
-            )
+            val searchQuery by viewModel.searchQuery.collectAsState()
 
-            // Active Workspace Profile Card
-            val (profileTitle, profileIcon, profileDesc) = when (userSettings.workerProfile) {
-                "Woodworker" -> Triple("Woodworking & Carpentry Workspace", Icons.Default.Engineering, "Optimized for carpenters, cabinetry & cabinet makers.")
-                "Civil Engineer" -> Triple("Civil Engineering Workspace", Icons.Default.Foundation, "Optimized for concrete, grades, earthworks & drainage.")
-                "Electrician" -> Triple("Electrician & Wiring Workspace", Icons.Default.FlashOn, "Optimized for Ohm's law, voltage drops, conduit filling.")
-                "Mechanical" -> Triple("Mechanical, HVAC & Piping Workspace", Icons.Default.PrecisionManufacturing, "Optimized for Psychrometrics, refrigerant curves, duct sizers & piping.")
-                "Painter" -> Triple("Painting, Coating & Surface Prep Workspace", Icons.Default.Palette, "Optimized for paint coverage, 2K mixing ratios, wet film thickness, dew points, and rust treatment.")
-                else -> Triple("General Trade Workspace", Icons.Default.Build, "Standard tools for general contractors, handymen & maintenance.")
-            }
-
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(16.dp),
+            // Simplified One-Row Quick Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.setSearchQuery(it) },
+                placeholder = { 
+                    Text(
+                        "Search 109 tools & calculators...",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    ) 
+                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        }
+                    }
+                },
+                singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("active_profile_card")
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = profileIcon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Column {
-                        Text(
-                            text = profileTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = profileDesc,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
-                }
+                    .testTag("dashboard_quick_search"),
+                shape = RoundedCornerShape(16.dp)
+            )
+
+            if (searchQuery.isEmpty()) {
+                // Minimized Material You Weather, Location & Geographical Meters Widget
+                MaterialYouWeatherWidget(
+                    userSettings = userSettings
+                )
             }
 
-            var showDashboardHint by remember { mutableStateOf(true) }
-            AnimatedVisibility(
-                visible = showDashboardHint,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("dashboard_hint_box")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            if (searchQuery.isNotEmpty()) {
+                val searchResults = ToolDefinition.ALL_TOOLS.filter { tool ->
+                    tool.matchesSearch(searchQuery)
+                }
+
+                Text(
+                    text = "Catalog Search Results (${searchResults.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                if (searchResults.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Help,
-                            contentDescription = "Help",
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "New User Guide & Dashboard Hints",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                            Text(
-                                text = "This dashboard shows your personalized trade tools. You can customize which tools are pinned by going to the 'Tool Catalog' (tap the book/grid icon in the top right corner).",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-                        IconButton(
-                            onClick = { showDashboardHint = false }
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
+                            Text("No tools found matching \"$searchQuery\"", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                } else {
+                    searchResults.forEach { tool ->
+                        val visuals = ToolIconMapper.getVisualsForTool(tool.id)
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onNavigateToTool(tool.id) }
+                                .testTag("search_result_item_${tool.id}")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(visuals.containerColor),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = visuals.icon,
+                                        contentDescription = null,
+                                        tint = visuals.contentColor,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = tool.title,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = tool.category,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = tool.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2
+                                    )
+                                }
+                                Button(
+                                    onClick = { onNavigateToTool(tool.id) },
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Open")
+                                }
+                            }
                         }
                     }
                 }

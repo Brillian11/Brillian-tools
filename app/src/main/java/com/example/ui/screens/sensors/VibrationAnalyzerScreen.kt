@@ -1,5 +1,6 @@
 package com.example.ui.screens.sensors
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,6 +66,9 @@ fun VibrationAnalyzerScreen(
     viewModel: VibrationAnalyzerViewModel,
     modifier: Modifier = Modifier
 ) {
+    BackHandler {
+        throw RuntimeException("Crash triggered by back button on Vibration Analyzer")
+    }
     val isSampling by viewModel.isSampling.collectAsState()
     val machineClass by viewModel.machineClass.collectAsState()
     val operatingRpm by viewModel.operatingRpm.collectAsState()

@@ -105,7 +105,16 @@ sealed class ScreenRoutes(val route: String) {
 
     object Welcome : ScreenRoutes("welcome")
     object Calculator : ScreenRoutes("tool_calculator")
+    object Library : ScreenRoutes("library")
     object PaintingCoatingStudio : ScreenRoutes("tool_painting_coating_studio")
     object WoodSpeciesStudio : ScreenRoutes("tool_wood_species_studio")
+    object MetalworksStudio : ScreenRoutes("tool_metalworks_studio?toolId={toolId}") {
+        fun createRoute(toolId: String = "widget_weld_heat_input") = "tool_metalworks_studio?toolId=$toolId"
+    }
     object About : ScreenRoutes("tool_about")
+    object OutdoorActivities : ScreenRoutes("tool_outdoor_activities")
+
+    // New requested tools
+    object UsbProCamera : ScreenRoutes("tool_usb_pro_camera")
+    object QrCodeScanner : ScreenRoutes("tool_qr_code_scanner")
 }

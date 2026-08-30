@@ -87,6 +87,7 @@ fun SagulatorScreen(
     val edgingThickness by viewModel.edgingThicknessInches.collectAsState()
     val sagResult by viewModel.sagResult.collectAsState()
     val lastLogSaved by viewModel.lastLogSaved.collectAsState()
+    val isMetric by viewModel.isMetric.collectAsState()
 
     var bookcaseNote by remember { mutableStateOf("Main Library Living Room Bookcase") }
     var speciesMenuExpanded by remember { mutableStateOf(false) }
@@ -115,35 +116,11 @@ fun SagulatorScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
-            Card(
-                colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.12f)),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.FormatAlignJustify, contentDescription = null, tint = statusColor)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "LUMBER SAGULATOR (SHELF DEFLECTION)",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
-                                color = statusColor
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Calculates structural beam deflection, MOE bending resistance, and maximum span limits for solid hardwoods, softwoods, and sheet goods.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            com.example.ui.components.ToolInfoBox(
+                icon = Icons.Default.FormatAlignJustify,
+                title = "Lumber Sagulator (Shelf Deflection)",
+                description = "Calculates structural beam deflection, MOE bending resistance, and maximum span limits for solid hardwoods, softwoods, and sheet goods."
+            )
 
             // Deflection Assessment Banner
             Card(
@@ -176,6 +153,26 @@ fun SagulatorScreen(
                         )
                     }
                 }
+            }
+
+            // Unit System Selector
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = !isMetric,
+                    onClick = { viewModel.setUnitSystem(false) },
+                    label = { Text("Imperial (in / lbs)") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = isMetric,
+                    onClick = { viewModel.setUnitSystem(true) },
+                    label = { Text("Metric (cm / mm / kg)") },
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             // Hero Deflection Digital Metric Card

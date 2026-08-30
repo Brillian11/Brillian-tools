@@ -77,49 +77,11 @@ fun KerfBendingScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Title & Description
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(visuals.containerColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = visuals.icon,
-                                contentDescription = null,
-                                tint = visuals.contentColor,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "KERF BENDING CALCULATOR",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                            Text(
-                                text = "Multi-Section Timber Kerfing",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Calculates exact cut spacing, depth, and pass count to bend solid timber or plywood across single or multiple kerfed bend zones on 1 board.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                    )
-                }
-            }
+            com.example.ui.components.ToolInfoBox(
+                icon = visuals.icon,
+                title = "Kerf Bending & Radial Cuts",
+                description = "Calculates exact cut spacing, depth, and pass count to bend solid timber or plywood across single or multiple kerfed bend zones on 1 board."
+            )
 
             // Mode Selector Switch (Single Bend vs Multi-Section Bend)
             Row(

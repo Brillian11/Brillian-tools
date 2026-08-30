@@ -1,0 +1,1 @@
+sed -i 's/        showCameraHubScreen = false    var isFabExpanded by remember/        showCameraHubScreen = false\n    }\n\n    var isFabExpanded by remember/g' app/src/main/java/com/example/ui/screens/dashboard/MainTabScreen.kt

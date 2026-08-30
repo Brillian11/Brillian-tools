@@ -96,35 +96,11 @@ fun BladeSpeedScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "BLADE SURFACE SPEED (SFPM) CALCULATOR",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Computes blade surface feet per minute (SFPM), arbor RPM, and pulley drive reduction ratios with material speed safety recommendations.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            com.example.ui.components.ToolInfoBox(
+                icon = Icons.Default.Speed,
+                title = "Blade Surface Speed (SFPM)",
+                description = "Computes blade surface feet per minute (SFPM), arbor RPM, and pulley drive reduction ratios with material speed safety recommendations."
+            )
 
             // Hero Metric Digital Readout
             Card(

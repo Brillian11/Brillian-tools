@@ -8,6 +8,9 @@ import org.json.JSONObject
 data class WorkProject(
     val id: String,
     val name: String,
+    val client: String = "",
+    val hourlyRate: Double = 45.0,
+    val colorHex: String = "#3F51B5",
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -27,6 +30,15 @@ data class WorkSubtask(
     val isCompleted: Boolean = false
 )
 
+data class TimeLog(
+    val id: String,
+    val projectId: String,
+    val durationSeconds: Long,
+    val laborCost: Double,
+    val timestamp: Long = System.currentTimeMillis(),
+    val note: String = ""
+)
+
 class WorkTrackingRepository(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("work_tracking_prefs", Context.MODE_PRIVATE)
 
@@ -36,6 +48,9 @@ class WorkTrackingRepository(context: Context) {
             val obj = JSONObject().apply {
                 put("id", proj.id)
                 put("name", proj.name)
+                put("client", proj.client)
+                put("hourlyRate", proj.hourlyRate)
+                put("colorHex", proj.colorHex)
                 put("createdAt", proj.createdAt)
             }
             array.put(obj)
@@ -54,6 +69,9 @@ class WorkTrackingRepository(context: Context) {
                     WorkProject(
                         id = obj.getString("id"),
                         name = obj.getString("name"),
+                        client = obj.optString("client", ""),
+                        hourlyRate = obj.optDouble("hourlyRate", 45.0),
+                        colorHex = obj.optString("colorHex", "#3F51B5"),
                         createdAt = obj.optLong("createdAt", System.currentTimeMillis())
                     )
                 )
@@ -131,6 +149,46 @@ class WorkTrackingRepository(context: Context) {
                         taskId = obj.getString("taskId"),
                         name = obj.getString("name"),
                         isCompleted = obj.optBoolean("isCompleted", false)
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    fun saveTimeLogs(logs: List<TimeLog>) {
+        val array = JSONArray()
+        logs.forEach { log ->
+            val obj = JSONObject().apply {
+                put("id", log.id)
+                put("projectId", log.projectId)
+                put("durationSeconds", log.durationSeconds)
+                put("laborCost", log.laborCost)
+                put("timestamp", log.timestamp)
+                put("note", log.note)
+            }
+            array.put(obj)
+        }
+        prefs.edit().putString("time_logs", array.toString()).apply()
+    }
+
+    fun loadTimeLogs(): List<TimeLog> {
+        val str = prefs.getString("time_logs", null) ?: return emptyList()
+        val list = mutableListOf<TimeLog>()
+        try {
+            val array = JSONArray(str)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    TimeLog(
+                        id = obj.getString("id"),
+                        projectId = obj.getString("projectId"),
+                        durationSeconds = obj.getLong("durationSeconds"),
+                        laborCost = obj.getDouble("laborCost"),
+                        timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                        note = obj.optString("note", "")
                     )
                 )
             }

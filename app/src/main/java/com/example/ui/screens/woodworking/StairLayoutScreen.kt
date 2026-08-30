@@ -72,6 +72,13 @@ fun StairLayoutScreen(
     var treadRunInput by remember { mutableStateOf(state.treadRunInches.toString()) }
     var wellLengthInput by remember { mutableStateOf(state.stairOpeningWellLengthInches.toString()) }
 
+    androidx.compose.runtime.LaunchedEffect(state.isMetric) {
+        totalRiseInput = state.totalRiseInches.toString()
+        targetRiserInput = state.targetRiserInches.toString()
+        treadRunInput = state.treadRunInches.toString()
+        wellLengthInput = state.stairOpeningWellLengthInches.toString()
+    }
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -124,6 +131,26 @@ fun StairLayoutScreen(
                 }
             }
 
+            // Unit System Selector (Imperial vs Metric)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = !state.isMetric,
+                    onClick = { viewModel.setUnitSystem(false) },
+                    label = { Text("Imperial (in / ft)") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = state.isMetric,
+                    onClick = { viewModel.setUnitSystem(true) },
+                    label = { Text("Metric (cm)") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             // Input Parameters Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -155,7 +182,7 @@ fun StairLayoutScreen(
                                     )
                                 }
                             },
-                            label = { Text("Total Rise (in)") },
+                            label = { Text(if (state.isMetric) "Total Rise (cm)" else "Total Rise (in)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
@@ -175,7 +202,7 @@ fun StairLayoutScreen(
                                     )
                                 }
                             },
-                            label = { Text("Target Riser (in)") },
+                            label = { Text(if (state.isMetric) "Target Riser (cm)" else "Target Riser (in)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
@@ -195,7 +222,7 @@ fun StairLayoutScreen(
                                     )
                                 }
                             },
-                            label = { Text("Tread Run (in)") },
+                            label = { Text(if (state.isMetric) "Tread Run (cm)" else "Tread Run (in)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
@@ -335,13 +362,13 @@ fun StairLayoutScreen(
                         IconButton(onClick = {
                             val info = """
                                 Stair Plan:
-                                Risers: ${state.stepCountRisers} @ ${String.format("%.3f", state.exactRiserHeightInches)}"
-                                Treads: ${state.treadCount} @ ${state.exactTreadRunInches}"
-                                Total Run: ${String.format("%.1f", state.totalRunInches)}" (${state.totalRunFeetInches})
-                                Stringer Cut Length: ${String.format("%.1f", state.stringerLengthInches)}"
-                                Throat Thickness: ${String.format("%.2f", state.stringerThroatDepthInches)}"
+                                Risers: ${state.stepCountRisers} @ ${state.exactRiserDisplay}
+                                Treads: ${state.treadCount} @ ${state.exactTreadRunDisplay}
+                                Total Run: ${state.totalRunFeetInches} (${state.totalRunSubText})
+                                Stringer Cut Length: ${state.stringerLengthDisplay}
+                                Throat Thickness: ${state.stringerThroatDisplay}
                                 Incline Angle: ${String.format("%.1f", state.stairAngleDeg)}°
-                                Blondel Comfort Index: ${String.format("%.1f", state.blondelComfortIndex)}"
+                                Blondel Comfort Index: ${state.blondelDisplay}
                             """.trimIndent()
                             clipboardManager.setText(AnnotatedString(info))
                             viewModel.logStairPlan()
@@ -363,7 +390,7 @@ fun StairLayoutScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "${String.format("%.3f", state.exactRiserHeightInches)}\" each",
+                                text = state.exactRiserDisplay,
                                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
                             )
                         }
@@ -374,7 +401,7 @@ fun StairLayoutScreen(
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
                             )
                             Text(
-                                text = "${state.exactTreadRunInches}\" run each",
+                                text = state.exactTreadRunDisplay,
                                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
                             )
                         }
@@ -386,7 +413,7 @@ fun StairLayoutScreen(
                                 color = MaterialTheme.colorScheme.secondary
                             )
                             Text(
-                                text = "${String.format("%.1f", state.totalRunInches)}\"",
+                                text = state.totalRunSubText,
                                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
                             )
                         }
@@ -399,14 +426,14 @@ fun StairLayoutScreen(
                         Column {
                             Text("Stringer Length", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "${String.format("%.1f", state.stringerLengthInches)}\"",
+                                text = state.stringerLengthDisplay,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
                             )
                         }
                         Column {
                             Text("Throat Thickness", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "${String.format("%.2f", state.stringerThroatDepthInches)}\"",
+                                text = state.stringerThroatDisplay,
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace,
@@ -417,7 +444,7 @@ fun StairLayoutScreen(
                         Column(horizontalAlignment = Alignment.End) {
                             Text("Blondel 2R+T Rule", style = MaterialTheme.typography.labelSmall)
                             Text(
-                                text = "${String.format("%.1f", state.blondelComfortIndex)}\"",
+                                text = state.blondelDisplay,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
                             )
                         }
@@ -441,18 +468,18 @@ fun StairLayoutScreen(
                     )
 
                     CodeCheckRow(
-                        title = "Max Riser Height (≤ 7.75\")",
-                        value = "${String.format("%.2f", state.exactRiserHeightInches)}\"",
+                        title = "Max Riser Height (${if (state.isMetric) "≤ 19.7 cm" else "≤ 7.75\""})",
+                        value = state.exactRiserDisplay,
                         isPassed = state.isRiserCodeCompliant
                     )
                     CodeCheckRow(
-                        title = "Min Tread Run (≥ 10.0\")",
-                        value = "${state.exactTreadRunInches}\"",
+                        title = "Min Tread Run (${if (state.isMetric) "≥ 25.4 cm" else "≥ 10.0\""})",
+                        value = state.exactTreadRunDisplay,
                         isPassed = state.isTreadCodeCompliant
                     )
                     CodeCheckRow(
-                        title = "Min Stringer Throat (≥ 3.5\")",
-                        value = "${String.format("%.2f", state.stringerThroatDepthInches)}\"",
+                        title = "Min Stringer Throat (${if (state.isMetric) "≥ 8.9 cm" else "≥ 3.5\""})",
+                        value = state.stringerThroatDisplay,
                         isPassed = state.isThroatCodeCompliant
                     )
                 }

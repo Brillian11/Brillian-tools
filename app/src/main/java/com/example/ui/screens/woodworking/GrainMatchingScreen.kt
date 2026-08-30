@@ -100,35 +100,11 @@ fun GrainMatchingScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Texture, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "GRAIN MATCHING & SPLICING BOARD LAYOUT",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Arrange and preview timber flitches side-by-side: Bookmatching, slip matching, flame symmetry, and alternating annual rings (⌒ ⌣) to prevent cupping.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            com.example.ui.components.ToolInfoBox(
+                icon = Icons.Default.Texture,
+                title = "Grain Matching & Board Layout",
+                description = "Arrange and preview timber flitches side-by-side: Bookmatching, slip matching, flame symmetry, and alternating annual rings to prevent cupping."
+            )
 
             // Panel Dimension Overview
             Card(

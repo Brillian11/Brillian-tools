@@ -66,6 +66,7 @@ import com.example.ui.screens.sensors.DuctSizerViewModel
 import com.example.ui.screens.sensors.ExpansionTankViewModel
 import com.example.ui.screens.sensors.SlingAngleViewModel
 import com.example.ui.screens.painting.PaintingCoatingStudioViewModel
+import com.example.ui.screens.metalworks.MetalworksStudioViewModel
 import com.example.ui.screens.sensors.LaserMeasureViewModel
 import com.example.ui.screens.sensors.LuxMeterViewModel
 import com.example.ui.screens.sensors.PlumbBobViewModel
@@ -74,9 +75,12 @@ import com.example.ui.screens.sensors.StudDetectorViewModel
 import com.example.ui.screens.sensors.SunPathTrackerViewModel
 import com.example.ui.screens.sensors.ThermalCameraViewModel
 import com.example.ui.screens.sensors.UsbEndoscopeViewModel
+import com.example.ui.screens.sensors.UsbProCameraViewModel
+import com.example.ui.screens.sensors.QrCodeScannerViewModel
 import com.example.ui.screens.sensors.VibrationAnalyzerViewModel
 import com.example.ui.screens.settings.SettingsViewModel
 import com.example.ui.screens.sync.SyncQueueViewModel
+import com.example.ui.screens.library.LibraryViewModel
 import com.example.ui.screens.tools.ColorDevToolsViewModel
 import com.example.ui.screens.tools.FocusTimerViewModel
 import com.example.ui.screens.tools.QuickNotesViewModel
@@ -287,6 +291,12 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
             modelClass.isAssignableFrom(UsbEndoscopeViewModel::class.java) -> {
                 UsbEndoscopeViewModel(toolLogRepository) as T
             }
+            modelClass.isAssignableFrom(UsbProCameraViewModel::class.java) -> {
+                UsbProCameraViewModel(toolLogRepository) as T
+            }
+            modelClass.isAssignableFrom(QrCodeScannerViewModel::class.java) -> {
+                QrCodeScannerViewModel(toolLogRepository) as T
+            }
             modelClass.isAssignableFrom(VibrationAnalyzerViewModel::class.java) -> {
                 VibrationAnalyzerViewModel(app, toolLogRepository) as T
             }
@@ -373,6 +383,12 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
             }
             modelClass.isAssignableFrom(PaintingCoatingStudioViewModel::class.java) -> {
                 PaintingCoatingStudioViewModel(toolLogRepository) as T
+            }
+            modelClass.isAssignableFrom(MetalworksStudioViewModel::class.java) -> {
+                MetalworksStudioViewModel(toolLogRepository) as T
+            }
+            modelClass.isAssignableFrom(LibraryViewModel::class.java) -> {
+                LibraryViewModel() as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class ${modelClass.name}")
         }

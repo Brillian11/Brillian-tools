@@ -10,6 +10,9 @@ data class QuickNoteEntity(
     val content: String,
     val tag: String = "Work",
     val colorHex: String = "#3F51B5",
+    val imagePaths: String = "",
+    val pdfPaths: String = "",
+    val isMarkdown: Boolean = true,
     val updatedAt: Long = System.currentTimeMillis(),
     val syncStatus: String = "PENDING_SYNC"
 )

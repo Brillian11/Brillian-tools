@@ -1,9 +1,7 @@
 package com.example.ui.screens.woodworking
 
 import android.widget.Toast
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,9 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Architecture
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Roofing
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -31,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,13 +40,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -66,9 +59,18 @@ fun RafterCalculatorScreen(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
 
-    var spanInput by remember { mutableStateOf(state.buildingSpanFeet.toString()) }
-    var ridgeInput by remember { mutableStateOf(state.ridgeThicknessInches.toString()) }
-    var overhangInput by remember { mutableStateOf(state.overhangInches.toString()) }
+    var spanInput by remember { mutableStateOf(if (state.isMetric) "7.2" else "24.0") }
+    var pitchInput by remember { mutableStateOf("6.0") }
+    var ridgeInput by remember { mutableStateOf(if (state.isMetric) "38" else "1.5") }
+    var overhangInput by remember { mutableStateOf(if (state.isMetric) "400" else "16.0") }
+    var seatCutInput by remember { mutableStateOf(if (state.isMetric) "89" else "3.5") }
+
+    androidx.compose.runtime.LaunchedEffect(state.isMetric) {
+        spanInput = if (state.isMetric) "7.2" else "24.0"
+        ridgeInput = if (state.isMetric) "38" else "1.5"
+        overhangInput = if (state.isMetric) "400" else "16.0"
+        seatCutInput = if (state.isMetric) "89" else "3.5"
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -99,7 +101,7 @@ fun RafterCalculatorScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Roofing,
+                            imageVector = Icons.Default.Architecture,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(28.dp)
@@ -108,13 +110,12 @@ fun RafterCalculatorScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Rafter & Roof Pitch Calculator",
+                            text = "Roof Rafter & Framing Calculator",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Common, hip, valley & jack rafters, pitch angles, birdsmouth seat cuts & HAP",
+                            text = if (state.isMetric) "Metric roof span (m), overhang (mm), birdsmouth & rafter lengths" else "Common, Hip & Jack rafter lengths, birdsmouth cuts & plumb angles",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
@@ -122,88 +123,55 @@ fun RafterCalculatorScreen(
                 }
             }
 
-            // Pitch Selector & Slider
+            // Unit Selector
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = !state.isMetric,
+                    onClick = { viewModel.setUnitSystem(false) },
+                    label = { Text("Imperial (in / ft / pitch)") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = state.isMetric,
+                    onClick = { viewModel.setUnitSystem(true) },
+                    label = { Text("Metric (mm / m / deg)") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Description Info Banner
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "ROOF PITCH (/12)",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        )
-                        Text(
-                            text = "${state.pitchOver12.toInt()}/12 (${String.format("%.1f", state.pitchAngleDeg)}° slope)",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                    }
-
-                    Slider(
-                        value = state.pitchOver12.toFloat(),
-                        onValueChange = {
-                            viewModel.updateInputs(
-                                spanInput.toDoubleOrNull() ?: 24.0,
-                                it.toDouble(),
-                                ridgeInput.toDoubleOrNull() ?: 1.5,
-                                overhangInput.toDoubleOrNull() ?: 16.0,
-                                state.rafterLumberNominal,
-                                state.birdsmouthSeatCutInches
-                            )
-                        },
-                        valueRange = 2f..16f,
-                        steps = 13,
-                        modifier = Modifier.testTag("pitch_slider")
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (state.isMetric)
+                            "Metric Framing Mode: Roof span in meters (m), timber dimensions in millimeters (mm), roof slope pitch ratio or angle (°)."
+                        else
+                            "Imperial Framing Mode: Building span in feet, pitch expressed as rise in inches over 12\" run.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        listOf(4.0, 6.0, 8.0, 10.0, 12.0).forEach { p ->
-                            FilterChip(
-                                selected = state.pitchOver12 == p,
-                                onClick = {
-                                    viewModel.updateInputs(
-                                        spanInput.toDoubleOrNull() ?: 24.0,
-                                        p,
-                                        ridgeInput.toDoubleOrNull() ?: 1.5,
-                                        overhangInput.toDoubleOrNull() ?: 16.0,
-                                        state.rafterLumberNominal,
-                                        state.birdsmouthSeatCutInches
-                                    )
-                                },
-                                label = { Text("${p.toInt()}/12") }
-                            )
-                        }
-                    }
                 }
             }
 
-            // Framing Dimensions Input
+            // Input Form Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "BUILDING SPAN & RAFTER LUMBER",
+                        text = "ROOF GEOMETRY PARAMETERS",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     )
 
@@ -212,307 +180,137 @@ fun RafterCalculatorScreen(
                             value = spanInput,
                             onValueChange = {
                                 spanInput = it
-                                it.toDoubleOrNull()?.let { sp ->
-                                    viewModel.updateInputs(
-                                        sp,
-                                        state.pitchOver12,
-                                        ridgeInput.toDoubleOrNull() ?: 1.5,
-                                        overhangInput.toDoubleOrNull() ?: 16.0,
-                                        state.rafterLumberNominal,
-                                        state.birdsmouthSeatCutInches
-                                    )
-                                }
+                                viewModel.updateInputs(
+                                    it.toDoubleOrNull() ?: 24.0,
+                                    pitchInput.toDoubleOrNull() ?: 6.0,
+                                    ridgeInput.toDoubleOrNull() ?: 1.5,
+                                    overhangInput.toDoubleOrNull() ?: 16.0,
+                                    state.rafterLumberNominal,
+                                    seatCutInput.toDoubleOrNull() ?: 3.5
+                                )
                             },
-                            label = { Text("Building Span (ft)") },
+                            label = { Text(if (state.isMetric) "Building Span (m)" else "Building Span (ft)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = pitchInput,
+                            onValueChange = {
+                                pitchInput = it
+                                viewModel.updateInputs(
+                                    spanInput.toDoubleOrNull() ?: 24.0,
+                                    it.toDoubleOrNull() ?: 6.0,
+                                    ridgeInput.toDoubleOrNull() ?: 1.5,
+                                    overhangInput.toDoubleOrNull() ?: 16.0,
+                                    state.rafterLumberNominal,
+                                    seatCutInput.toDoubleOrNull() ?: 3.5
+                                )
+                            },
+                            label = { Text(if (state.isMetric) "Slope Pitch Ratio" else "Pitch (in/12)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = ridgeInput,
+                            onValueChange = {
+                                ridgeInput = it
+                                viewModel.updateInputs(
+                                    spanInput.toDoubleOrNull() ?: 24.0,
+                                    pitchInput.toDoubleOrNull() ?: 6.0,
+                                    it.toDoubleOrNull() ?: 1.5,
+                                    overhangInput.toDoubleOrNull() ?: 16.0,
+                                    state.rafterLumberNominal,
+                                    seatCutInput.toDoubleOrNull() ?: 3.5
+                                )
+                            },
+                            label = { Text(if (state.isMetric) "Ridge Board (mm)" else "Ridge Board (in)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
                             value = overhangInput,
                             onValueChange = {
                                 overhangInput = it
-                                it.toDoubleOrNull()?.let { ov ->
-                                    viewModel.updateInputs(
-                                        spanInput.toDoubleOrNull() ?: 24.0,
-                                        state.pitchOver12,
-                                        ridgeInput.toDoubleOrNull() ?: 1.5,
-                                        ov,
-                                        state.rafterLumberNominal,
-                                        state.birdsmouthSeatCutInches
-                                    )
-                                }
+                                viewModel.updateInputs(
+                                    spanInput.toDoubleOrNull() ?: 24.0,
+                                    pitchInput.toDoubleOrNull() ?: 6.0,
+                                    ridgeInput.toDoubleOrNull() ?: 1.5,
+                                    it.toDoubleOrNull() ?: 16.0,
+                                    state.rafterLumberNominal,
+                                    seatCutInput.toDoubleOrNull() ?: 3.5
+                                )
                             },
-                            label = { Text("Overhang (in)") },
+                            label = { Text(if (state.isMetric) "Overhang (mm)" else "Overhang (in)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = ridgeInput,
-                            onValueChange = {
-                                ridgeInput = it
-                                it.toDoubleOrNull()?.let { rd ->
-                                    viewModel.updateInputs(
-                                        spanInput.toDoubleOrNull() ?: 24.0,
-                                        state.pitchOver12,
-                                        rd,
-                                        overhangInput.toDoubleOrNull() ?: 16.0,
-                                        state.rafterLumberNominal,
-                                        state.birdsmouthSeatCutInches
-                                    )
-                                }
-                            },
-                            label = { Text("Ridge (in)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(0.8f)
                         )
                     }
 
-                    // Lumber Size Selector
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Rafter Lumber:", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                        listOf("2x6 (5.5\")", "2x8 (7.25\")", "2x10 (9.25\")").forEach { lumber ->
+                    Text("Rafter Timber Stock:", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
+                    val stockChips = if (state.isMetric) {
+                        listOf("38x140 mm (2x6)", "38x184 mm (2x8)", "38x235 mm (2x10)", "38x286 mm (2x12)")
+                    } else {
+                        listOf("2x6 (5.5\")", "2x8 (7.25\")", "2x10 (9.25\")", "2x12 (11.25\")")
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        stockChips.forEach { stock ->
                             FilterChip(
-                                selected = state.rafterLumberNominal == lumber,
+                                selected = state.rafterLumberNominal == stock,
                                 onClick = {
                                     viewModel.updateInputs(
                                         spanInput.toDoubleOrNull() ?: 24.0,
-                                        state.pitchOver12,
+                                        pitchInput.toDoubleOrNull() ?: 6.0,
                                         ridgeInput.toDoubleOrNull() ?: 1.5,
                                         overhangInput.toDoubleOrNull() ?: 16.0,
-                                        lumber,
-                                        state.birdsmouthSeatCutInches
+                                        stock,
+                                        seatCutInput.toDoubleOrNull() ?: 3.5
                                     )
                                 },
-                                label = { Text(lumber) }
+                                label = { Text(stock, fontSize = 10.sp) }
                             )
                         }
                     }
                 }
             }
 
-            // Visual Roof Truss & Rafter Diagram
+            // Calculations Summary Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "ROOF RAFTER CROSS-SECTION",
+                        text = "CALCULATED RAFTER LENGTHS & CUT ANGLES",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     )
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
-                    ) {
-                        val primaryColor = MaterialTheme.colorScheme.primary
-                        val secondaryColor = MaterialTheme.colorScheme.secondary
-
-                        Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            val w = size.width
-                            val h = size.height
-                            val midX = w / 2f
-                            val topY = 20f
-                            val wallLeftX = 40f
-                            val wallRightX = w - 40f
-                            val plateY = h - 30f
-
-                            // Draw Tie Ceiling Joist / Plate baseline
-                            drawLine(
-                                color = Color.Gray.copy(alpha = 0.5f),
-                                start = Offset(wallLeftX, plateY),
-                                end = Offset(wallRightX, plateY),
-                                strokeWidth = 3f
-                            )
-
-                            // Draw Left and Right Rafters with Overhang tails
-                            val leftTailX = 10f
-                            val rightTailX = w - 10f
-                            val tailY = plateY + 18f
-
-                            val rafterPath = Path().apply {
-                                moveTo(leftTailX, tailY)
-                                lineTo(midX, topY)
-                                lineTo(rightTailX, tailY)
-                            }
-                            drawPath(path = rafterPath, color = primaryColor, style = Stroke(width = 5f))
-
-                            // Draw Center King Post / Rise Reference Line
-                            drawLine(
-                                color = secondaryColor,
-                                start = Offset(midX, topY),
-                                end = Offset(midX, plateY),
-                                strokeWidth = 2f
-                            )
-
-                            // Ridge Beam at top
-                            drawCircle(color = primaryColor, radius = 6f, center = Offset(midX, topY))
-                        }
-                    }
-                }
-            }
-
-            // Results Card - Common Rafter
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "COMMON RAFTER CUT SPECS",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        )
-                        IconButton(onClick = {
-                            val info = """
-                                Common Rafter: ${state.commonRafterFtIn} (${String.format("%.1f", state.commonRafterLengthInches)}")
-                                Total Length with Overhang Tail: ${state.totalCommonLengthWithTailFtIn} (${String.format("%.1f", state.totalCommonLengthWithTailInches)}")
-                                Plumb Cut: ${String.format("%.1f", state.plumbCutAngleDeg)}° | Seat Cut: ${String.format("%.1f", state.seatCutAngleDeg)}°
-                                Total Rise: ${state.totalRiseFtIn}
-                                Hip/Valley Rafter: ${state.hipRafterFtIn} (Plumb Cut: ${String.format("%.1f", state.hipPlumbCutAngleDeg)}°)
-                                Jack Rafter Spacing: 16" O.C. -> ${String.format("%.1f", state.jackStepDown16InOC)}" | 24" O.C. -> ${String.format("%.1f", state.jackStepDown24InOC)}"
-                                Birdsmouth HAP: ${String.format("%.2f", state.heightAbovePlateInches)}"
-                            """.trimIndent()
-                            clipboardManager.setText(AnnotatedString(info))
-                            viewModel.logRafterSpecs()
-                            Toast.makeText(context, "Copied Rafter Cut Specs!", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy")
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Common Length (to plate)", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = state.commonRafterFtIn,
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "${String.format("%.1f", state.commonRafterLengthInches)}\"",
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
-                            )
+                            Text("Common Rafter Length", style = MaterialTheme.typography.labelSmall)
+                            Text(state.commonRafterFtIn, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            Text("Total w/ Eave Tail: ${state.totalCommonLengthWithTailFtIn}", style = MaterialTheme.typography.bodySmall)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Total Length (with tail)", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = state.totalCommonLengthWithTailFtIn,
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                            Text(
-                                text = "${String.format("%.1f", state.totalCommonLengthWithTailInches)}\"",
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
-                            )
+                            Text("Plumb / Seat Cut Angle", style = MaterialTheme.typography.labelSmall)
+                            Text("${String.format("%.1f", state.plumbCutAngleDeg)}° / ${String.format("%.1f", state.seatCutAngleDeg)}°", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                            Text("Roof Incline: ${String.format("%.1f", state.pitchAngleDeg)}°", style = MaterialTheme.typography.bodySmall)
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Plumb Cut Angle", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = "${String.format("%.1f", state.plumbCutAngleDeg)}°",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                            )
-                        }
-                        Column {
-                            Text("Seat Cut Angle", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = "${String.format("%.1f", state.seatCutAngleDeg)}°",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                            )
+                            Text("Hip / Valley Rafter", style = MaterialTheme.typography.labelSmall)
+                            Text(state.hipRafterFtIn, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Birdsmouth HAP", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = "${String.format("%.2f", state.heightAbovePlateInches)}\"",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
-                                color = Color(0xFF2E7D32)
-                            )
+                            Text("Total Roof Area", style = MaterialTheme.typography.labelSmall)
+                            Text(state.totalRoofAreaDisplay, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32)))
                         }
-                    }
-                }
-            }
-
-            // Hip, Valley & Jack Rafters Card
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "HIP, VALLEY & JACK RAFTER SPECIFICATIONS",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("Hip / Valley Length", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = state.hipRafterFtIn,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "${String.format("%.1f", state.hipRafterLengthInches)}\"",
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Hip Plumb Cut", style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                text = "${String.format("%.1f", state.hipPlumbCutAngleDeg)}°",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Jack Rafter Step-Down Differences:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("16\" O.C. Spacing: ${String.format("%.2f", state.jackStepDown16InOC)}\" step-down", style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
-                        Text("24\" O.C. Spacing: ${String.format("%.2f", state.jackStepDown24InOC)}\" step-down", style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
                     }
                 }
             }
