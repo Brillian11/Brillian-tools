@@ -11,12 +11,3 @@
 - **App Logo & Visual Polish**: Integrated custom adaptive app logo (`logo.webp`) and upgraded the Library module with local database initialization and Google Play Store external app viewer shortcuts.
 
 ---
-
-## 📝 Suggested Git Commit Message
-
-```bash
-git add .
-git commit -m "feat: introduce AI agent-driven standpoint, spotlight AI cutting list & paint analyzer, add rapid dev warning, update developer profile, and document 111+ tool catalog with app logo"
-git tag -a v1.2.0 -m "Release v1.2.0: AI Agent-Driven Fieldwork & 111+ Tools Suite"
-git push origin main --tags
-```
