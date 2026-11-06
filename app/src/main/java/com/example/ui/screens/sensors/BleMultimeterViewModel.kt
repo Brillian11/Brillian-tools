@@ -4,9 +4,11 @@ import android.app.Application
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.media.ToneGenerator
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.repository.ToolLogRepository
+import com.example.domain.sensor.SensorSoundManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +44,7 @@ class BleMultimeterViewModel(
 
     private val bluetoothManager = application.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
+    private val soundManager = SensorSoundManager(application)
 
     private val _isConnected = MutableStateFlow(true)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
@@ -54,6 +57,9 @@ class BleMultimeterViewModel(
 
     private val _isHold = MutableStateFlow(false)
     val isHold: StateFlow<Boolean> = _isHold.asStateFlow()
+
+    private val _isAudioEnabled = MutableStateFlow(true)
+    val isAudioEnabled: StateFlow<Boolean> = _isAudioEnabled.asStateFlow()
 
     private val _reading = MutableStateFlow(
         MeterReading(
@@ -78,6 +84,8 @@ class BleMultimeterViewModel(
 
     private val _lastLogSaved = MutableStateFlow(false)
     val lastLogSaved: StateFlow<Boolean> = _lastLogSaved.asStateFlow()
+
+    private var beepCooldown = 0
 
     init {
         startTelemetryLoop()
@@ -128,7 +136,22 @@ class BleMultimeterViewModel(
                         avgVal = avgV
                     )
 
-                    _isAlarmTriggered.value = rawVal >= _alarmThreshold.value
+                    val isAlarm = rawVal >= _alarmThreshold.value
+                    _isAlarmTriggered.value = isAlarm
+
+                    // Audio feedback for continuity and high-voltage alarm
+                    if (_isAudioEnabled.value) {
+                        if (currentFunc == MeterFunction.CONTINUITY && rawVal < 50f) {
+                            // Steady multimeter continuity beep (2400 Hz)
+                            soundManager.playBeep(ToneGenerator.TONE_PROP_BEEP2, 60, 2400)
+                        } else if (isAlarm) {
+                            beepCooldown++
+                            if (beepCooldown % 3 == 0) {
+                                soundManager.playBeep(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 50, 1800)
+                                soundManager.vibrate(25)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -153,6 +176,13 @@ class BleMultimeterViewModel(
         _isHold.value = !_isHold.value
     }
 
+    fun toggleAudio() {
+        _isAudioEnabled.value = !_isAudioEnabled.value
+        if (_isAudioEnabled.value) {
+            soundManager.playBeep(ToneGenerator.TONE_PROP_ACK, 50, 1500)
+        }
+    }
+
     fun setAlarmThreshold(thresh: Float) {
         _alarmThreshold.value = thresh
     }
@@ -172,5 +202,10 @@ class BleMultimeterViewModel(
             )
             _lastLogSaved.value = true
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.release()
     }
 }

@@ -64,10 +64,11 @@ import com.example.ui.screens.woodworking.ResultBadge
 @Composable
 fun VibrationAnalyzerScreen(
     viewModel: VibrationAnalyzerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit = {}
 ) {
     BackHandler {
-        throw RuntimeException("Crash triggered by back button on Vibration Analyzer")
+        onNavigateBack()
     }
     val isSampling by viewModel.isSampling.collectAsState()
     val machineClass by viewModel.machineClass.collectAsState()

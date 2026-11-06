@@ -11,13 +11,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -48,6 +55,7 @@ fun DigitalLevelScreen(
 ) {
     val sensorData by viewModel.sensorData.collectAsState()
     val isHold by viewModel.isHold.collectAsState()
+    val isBuzzerEnabled by viewModel.isBuzzerEnabled.collectAsState()
 
     val levelColor = if (sensorData.isLevel) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
 
@@ -161,9 +169,9 @@ fun DigitalLevelScreen(
                 }
             }
 
-            // Controls (Tare & Hold Buttons)
+            // Controls (Tare, Zero, Hold & Level Buzzer)
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Button(
@@ -172,7 +180,7 @@ fun DigitalLevelScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = levelColor),
                     modifier = Modifier.weight(1f).testTag("tare_zero_button")
                 ) {
-                    Text("Tare / Set Zero")
+                    Text("Tare", fontSize = 12.sp)
                 }
 
                 OutlinedButton(
@@ -180,7 +188,7 @@ fun DigitalLevelScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f).testTag("reset_tare_button")
                 ) {
-                    Text("Reset Zero")
+                    Text("Reset", fontSize = 12.sp)
                 }
 
                 OutlinedButton(
@@ -188,7 +196,21 @@ fun DigitalLevelScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f).testTag("hold_readout_button")
                 ) {
-                    Text(if (isHold) "Resume" else "Hold")
+                    Text(if (isHold) "Resume" else "Hold", fontSize = 12.sp)
+                }
+
+                FilledTonalButton(
+                    onClick = { viewModel.toggleBuzzer() },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1.3f).testTag("level_buzzer_toggle")
+                ) {
+                    Icon(
+                        imageVector = if (isBuzzerEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                        contentDescription = "Level Buzzer",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isBuzzerEnabled) "Buzzer ON" else "Muted", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

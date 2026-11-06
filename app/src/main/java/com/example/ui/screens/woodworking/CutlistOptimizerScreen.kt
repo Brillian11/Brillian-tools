@@ -101,6 +101,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -177,7 +178,7 @@ fun CutlistOptimizerScreen(
     var newThickness by remember(dimensionUnit) { mutableStateOf(if (dimensionUnit == DimensionUnit.CM) "2" else "20") }
     var newQty by remember { mutableStateOf("1") }
 
-    var show3DPreview by remember { mutableStateOf(false) }
+    var show3DPreview by remember { mutableStateOf(true) }
 
     // 3D Isometric View State
     var yawAngle by remember { mutableFloatStateOf(45f) }
@@ -904,6 +905,27 @@ fun CutlistOptimizerScreen(
                                     ) {
                                         Icon(Icons.Default.ZoomIn, contentDescription = "Zoom In", modifier = Modifier.size(16.dp))
                                     }
+                                    // Top View Preset Button
+                                    TextButton(
+                                        onClick = {
+                                            yawAngle = 0f
+                                            pitchAngle = 89f
+                                        },
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text("Top", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                    }
+                                    // Iso View Preset Button
+                                    TextButton(
+                                        onClick = {
+                                            yawAngle = 45f
+                                            pitchAngle = 35f
+                                        },
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text("Iso", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                    }
+
                                     IconButton(
                                         onClick = {
                                             yawAngle = 45f
@@ -2984,6 +3006,15 @@ fun ThreeDInteractiveIsometricCanvas(
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentYaw by rememberUpdatedState(yawAngle)
+    val currentPitch by rememberUpdatedState(pitchAngle)
+    val currentZoom by rememberUpdatedState(zoomScale)
+    val currentPan by rememberUpdatedState(panOffset)
+    val currentIsHandTool by rememberUpdatedState(isHandToolActive)
+    val currentOnYawPitchChange by rememberUpdatedState(onYawPitchChange)
+    val currentOnPanChange by rememberUpdatedState(onPanChange)
+    val currentOnZoomChange by rememberUpdatedState(onZoomChange)
+
     val isCabinet = requestedCuts.any {
         it.label.contains("shelf", ignoreCase = true) ||
         it.label.contains("side", ignoreCase = true) ||
@@ -3006,16 +3037,17 @@ fun ThreeDInteractiveIsometricCanvas(
         it.label.contains("meja", ignoreCase = true)
     }
 
-    val gestureModifier = modifier.pointerInput(isHandToolActive) {
+    val gestureModifier = modifier.pointerInput(Unit) {
         detectTransformGestures { _, pan, zoom, _ ->
-            onZoomChange((zoomScale * zoom).coerceIn(0.35f, 4.0f))
-            if (isHandToolActive) {
-                onPanChange(panOffset + pan)
+            val newZoom = (currentZoom * zoom).coerceIn(0.2f, 5.0f)
+            currentOnZoomChange(newZoom)
+            if (currentIsHandTool) {
+                currentOnPanChange(currentPan + pan)
             } else {
-                var newYaw = (yawAngle + pan.x * 0.65f) % 360f
+                var newYaw = (currentYaw + pan.x * 0.65f) % 360f
                 if (newYaw < 0f) newYaw += 360f
-                val newPitch = (pitchAngle - pan.y * 0.55f).coerceIn(5f, 88f)
-                onYawPitchChange(newYaw, newPitch)
+                val newPitch = (currentPitch - pan.y * 0.55f).coerceIn(-89.9f, 89.9f)
+                currentOnYawPitchChange(newYaw, newPitch)
             }
         }
     }
@@ -3026,27 +3058,25 @@ fun ThreeDInteractiveIsometricCanvas(
         val cx = size.width / 2f
         val cy = size.height / 2f
 
-        val radY = Math.toRadians(yawAngle.toDouble())
-        val radX = Math.toRadians(pitchAngle.toDouble())
+        val radY = Math.toRadians(currentYaw.toDouble())
+        val radX = Math.toRadians(currentPitch.toDouble())
         val cosY = Math.cos(radY).toFloat()
         val sinY = Math.sin(radY).toFloat()
         val cosX = Math.cos(radX).toFloat()
         val sinX = Math.sin(radX).toFloat()
 
-        // 3D rotation projection function
+        // 3D rotation projection function with pan and zoom applied correctly
         fun project(v: Vector3D): Triple<Float, Float, Float> {
-            // Rotate around Y axis
             val x1 = v.x * cosY + v.z * sinY
             val z1 = -v.x * sinY + v.z * cosY
             val y1 = v.y
 
-            // Rotate around X axis
             val y2 = y1 * cosX - z1 * sinX
             val z2 = y1 * sinX + z1 * cosX
             val x2 = x1
 
-            val screenX = cx + panOffset.x + x2 * zoomScale
-            val screenY = cy + panOffset.y + y2 * zoomScale
+            val screenX = cx + currentPan.x + x2 * currentZoom
+            val screenY = cy + currentPan.y + y2 * currentZoom
             return Triple(screenX, screenY, z2)
         }
 
@@ -3144,10 +3174,10 @@ fun ThreeDInteractiveIsometricCanvas(
         }
 
         // Draw Ground Isometric Plane Grid
-        val gridMin = -160f
-        val gridMax = 160f
-        val gridStep = 40f
-        val groundY = 85f
+        val gridMin = -180f
+        val gridMax = 180f
+        val gridStep = 45f
+        val groundY = 90f
         var g = gridMin
         while (g <= gridMax) {
             val p1 = project(Vector3D(g, groundY, gridMin))
@@ -3156,13 +3186,13 @@ fun ThreeDInteractiveIsometricCanvas(
             val p4 = project(Vector3D(gridMax, groundY, g))
 
             drawLine(
-                color = Color.LightGray.copy(alpha = 0.35f),
+                color = Color.LightGray.copy(alpha = 0.3f),
                 start = Offset(p1.first, p1.second),
                 end = Offset(p2.first, p2.second),
                 strokeWidth = 1f
             )
             drawLine(
-                color = Color.LightGray.copy(alpha = 0.35f),
+                color = Color.LightGray.copy(alpha = 0.3f),
                 start = Offset(p3.first, p3.second),
                 end = Offset(p4.first, p4.second),
                 strokeWidth = 1f
@@ -3180,9 +3210,9 @@ fun ThreeDInteractiveIsometricCanvas(
             val rawWidth = shelfPiece?.lengthMm ?: 650.0
             val rawDepth = if (shelfPiece != null && shelfPiece.widthMm > 0) shelfPiece.widthMm else 300.0
 
-            val H = (rawHeight * 0.11).coerceIn(70.0, 130.0).toFloat()
-            val W = (rawWidth * 0.11).coerceIn(60.0, 110.0).toFloat()
-            val D = (rawDepth * 0.12).coerceIn(35.0, 70.0).toFloat()
+            val H = (rawHeight * 0.11).coerceIn(75.0, 140.0).toFloat()
+            val W = (rawWidth * 0.11).coerceIn(65.0, 120.0).toFloat()
+            val D = (rawDepth * 0.12).coerceIn(38.0, 75.0).toFloat()
             val T = 8f
 
             val hw = W / 2f
@@ -3198,10 +3228,10 @@ fun ThreeDInteractiveIsometricCanvas(
             // Bottom Slab
             allFaces.addAll(createCuboidFaces(-hw, hh - T, -hd, hw, hh, hd, Color(0xFFB59A7A), "Bottom Slab"))
             // Back Panel
-            allFaces.addAll(createCuboidFaces(-hw + T, -hh + T, -hd, hw - T, hh - T, -hd + 4f, Color(0xFFEEDC82).copy(alpha = 0.5f), "Backing"))
+            allFaces.addAll(createCuboidFaces(-hw + T, -hh + T, -hd, hw - T, hh - T, -hd + 4f, Color(0xFFEEDC82).copy(alpha = 0.6f), "Backing"))
 
-            // Shelves
-            val shelfCount = requestedCuts.filter { it.label.contains("shelf", ignoreCase = true) || it.label.contains("rak", ignoreCase = true) }.sumOf { it.quantity }.coerceIn(1, 3)
+            // Shelves with accurate parametric count
+            val shelfCount = requestedCuts.filter { it.label.contains("shelf", ignoreCase = true) || it.label.contains("rak", ignoreCase = true) }.sumOf { it.quantity }.coerceIn(1, 4)
             for (i in 1..shelfCount) {
                 val f = (i.toFloat() / (shelfCount + 1)) * (H - 2 * T) - (hh - T)
                 allFaces.addAll(createCuboidFaces(-hw + T, f, -hd + 4f, hw - T, f + T, hd, Color(0xFFC19A6B), "Shelf $i"))
@@ -3217,11 +3247,11 @@ fun ThreeDInteractiveIsometricCanvas(
             val legLen = legPiece?.lengthMm ?: 450.0
             val legThick = legPiece?.thicknessMm ?: 40.0
 
-            val W = (topLen * 0.12).coerceIn(60.0, 120.0).toFloat()
-            val D = (topWid * 0.12).coerceIn(40.0, 90.0).toFloat()
-            val H = (legLen * 0.14).coerceIn(45.0, 95.0).toFloat()
-            val T = (topThick * 0.4).coerceIn(6.0, 16.0).toFloat()
-            val legW = (legThick * 0.22).coerceIn(8.0, 16.0).toFloat()
+            val W = (topLen * 0.12).coerceIn(65.0, 130.0).toFloat()
+            val D = (topWid * 0.12).coerceIn(42.0, 95.0).toFloat()
+            val H = (legLen * 0.14).coerceIn(48.0, 100.0).toFloat()
+            val T = (topThick * 0.4).coerceIn(7.0, 18.0).toFloat()
+            val legW = (legThick * 0.22).coerceIn(9.0, 18.0).toFloat()
 
             val hw = W / 2f
             val hd = D / 2f
@@ -3245,13 +3275,13 @@ fun ThreeDInteractiveIsometricCanvas(
             allFaces.addAll(createCuboidFaces(-hw + legInset, topY, -hd + legInset + legW, -hw + legInset + apronT, topY + apronH, hd - legInset - legW, Color(0xFFA0714E), "Left Apron"))
             allFaces.addAll(createCuboidFaces(hw - legInset - apronT, topY, -hd + legInset + legW, hw - legInset, topY + apronH, hd - legInset - legW, Color(0xFFA0714E), "Right Apron"))
         } else {
-            // General Exploded Layered Parts Stack
-            val piecesToDraw = requestedCuts.take(6)
-            var currentY = 50f
+            // General Exploded Layered Parts Stack with accurate proportional dimensions
+            val piecesToDraw = requestedCuts.take(8)
+            var currentY = 55f
             piecesToDraw.forEachIndexed { _, piece ->
-                val len = (piece.lengthMm * 0.12).coerceIn(40.0, 110.0).toFloat()
-                val wid = (piece.widthMm * 0.15).coerceIn(18.0, 60.0).toFloat()
-                val thick = (piece.thicknessMm * 0.5).coerceIn(6.0, 16.0).toFloat()
+                val len = (piece.lengthMm * 0.12).coerceIn(45.0, 120.0).toFloat()
+                val wid = (piece.widthMm * 0.15).coerceIn(20.0, 65.0).toFloat()
+                val thick = (piece.thicknessMm * 0.5).coerceIn(7.0, 18.0).toFloat()
 
                 val hw = len / 2f
                 val hd = wid / 2f
@@ -3265,7 +3295,7 @@ fun ThreeDInteractiveIsometricCanvas(
                         piece.label
                     )
                 )
-                currentY -= (thick + 14f)
+                currentY -= (thick + 16f)
             }
         }
 
@@ -3282,14 +3312,14 @@ fun ThreeDInteractiveIsometricCanvas(
             val path: Path,
             val shadedColor: Color,
             val depth: Float,
-            val isFacingCamera: Boolean
+            val isFacingCamera: Boolean,
+            val label: String?
         )
 
         val renderFaces = mutableListOf<RenderFace>()
 
         allFaces.forEach { face ->
             val rotNormal = rotateNormal(face.normal)
-            // Camera is at (0, 0, +Infinity) looking along -Z in camera space
             val isFacingCamera = rotNormal.z > -0.08f
 
             if (isFacingCamera || isWireframeMode) {
@@ -3309,7 +3339,6 @@ fun ThreeDInteractiveIsometricCanvas(
 
                 val avgZ = totalZ / face.vertices.size.coerceAtLeast(1)
 
-                // Shading calculation
                 val dot = (rotNormal.x * nlx + rotNormal.y * nly + rotNormal.z * nlz).coerceIn(-1f, 1f)
                 val brightness = (0.65f + 0.35f * dot).coerceIn(0.30f, 1.15f)
 
@@ -3320,7 +3349,7 @@ fun ThreeDInteractiveIsometricCanvas(
                     alpha = face.baseColor.alpha
                 )
 
-                renderFaces.add(RenderFace(path, shaded, avgZ, isFacingCamera))
+                renderFaces.add(RenderFace(path, shaded, avgZ, isFacingCamera, face.label))
             }
         }
 

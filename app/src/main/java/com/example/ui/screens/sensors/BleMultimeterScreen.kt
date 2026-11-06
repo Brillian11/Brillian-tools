@@ -30,11 +30,14 @@ import androidx.compose.material.icons.filled.ElectricMeter
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +75,7 @@ fun BleMultimeterScreen(
     val deviceName by viewModel.deviceName.collectAsState()
     val function by viewModel.function.collectAsState()
     val isHold by viewModel.isHold.collectAsState()
+    val isAudioEnabled by viewModel.isAudioEnabled.collectAsState()
     val reading by viewModel.reading.collectAsState()
     val history by viewModel.history.collectAsState()
     val alarmThreshold by viewModel.alarmThreshold.collectAsState()
@@ -298,17 +302,31 @@ fun BleMultimeterScreen(
                 }
             }
 
-            // Quick Actions (Hold & Connect)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            // Quick Actions (Hold, Beeper Audio & Connect)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = { viewModel.toggleHold() },
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = if (isHold) Color(0xFFD97706) else MaterialTheme.colorScheme.primary),
                     modifier = Modifier.weight(1f).height(50.dp).testTag("toggle_hold_button")
                 ) {
-                    Icon(if (isHold) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isHold) "RESUME" else "DATA HOLD", fontWeight = FontWeight.Bold)
+                    Icon(if (isHold) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isHold) "RESUME" else "HOLD", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                }
+
+                FilledTonalButton(
+                    onClick = { viewModel.toggleAudio() },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1.1f).height(50.dp).testTag("multimeter_audio_toggle")
+                ) {
+                    Icon(
+                        if (isAudioEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                        contentDescription = "Audio Beeper",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isAudioEnabled) "BEEPER ON" else "MUTED", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 }
 
                 OutlinedButton(
@@ -316,9 +334,9 @@ fun BleMultimeterScreen(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.weight(1f).height(50.dp)
                 ) {
-                    Icon(if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isConnected) "DISCONNECT" else "CONNECT", fontWeight = FontWeight.Bold)
+                    Icon(if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isConnected) "ONLINE" else "CONNECT", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 }
             }
 

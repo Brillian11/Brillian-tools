@@ -1160,7 +1160,7 @@ fun NavGraph(
 
             composable(ScreenRoutes.VibrationAnalyzer.route) {
                 val vm: VibrationAnalyzerViewModel = viewModel(factory = actualFactory)
-                VibrationAnalyzerScreen(viewModel = vm)
+                VibrationAnalyzerScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
             }
 
             composable(ScreenRoutes.BleMultimeter.route) {
