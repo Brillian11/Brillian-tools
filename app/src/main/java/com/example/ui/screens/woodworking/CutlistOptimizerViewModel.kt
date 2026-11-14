@@ -889,7 +889,7 @@ Please provide your recommendations for:
         val pdfPathStr = pdfUri?.path ?: ""
 
         val db = com.example.data.database.AppDatabase.getInstance(context)
-        val noteRepo = com.example.data.repository.NoteRepository(db.quickNoteDao(), db.syncQueueDao())
+        val noteRepo = com.example.data.repository.NoteRepository(db.quickNoteDao())
 
         viewModelScope.launch {
             noteRepo.addNote(

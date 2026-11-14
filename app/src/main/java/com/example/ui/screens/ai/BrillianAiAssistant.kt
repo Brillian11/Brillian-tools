@@ -1047,7 +1047,7 @@ fun ChatWoodworkDraftCard(
                 OutlinedButton(
                     onClick = {
                         val db = com.example.data.database.AppDatabase.getInstance(context)
-                        val noteRepo = com.example.data.repository.NoteRepository(db.quickNoteDao(), db.syncQueueDao())
+                        val noteRepo = com.example.data.repository.NoteRepository(db.quickNoteDao())
 
                         val markdown = buildString {
                             append("# 🪚 AI Cutlist Draft: ${draft.projectName}\n\n")
@@ -3434,16 +3434,6 @@ data class HardwareSpecs(
     val supportsVulkan: Boolean
 )
 
-data class ModelProfile(
-    val id: String,
-    val name: String,
-    val size: String,
-    val sizeBytes: Long,
-    val targetTokensPerSec: String,
-    val description: String,
-    val minRamGb: Double
-)
-
 fun detectHardware(context: Context): HardwareSpecs {
     val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     val memoryInfo = ActivityManager.MemoryInfo()
@@ -3471,45 +3461,7 @@ fun detectHardware(context: Context): HardwareSpecs {
     )
 }
 
-fun getModelsList(): List<ModelProfile> {
-    return listOf(
-        ModelProfile(
-            id = "smollm2_360m",
-            name = "SmolLM2 360M Instruct (GGUF Q4_K_M)",
-            size = "230 MB",
-            sizeBytes = 241172480L,
-            targetTokensPerSec = "38-55 tok/s",
-            description = "Ultra-lightweight embedded trade calculator. Instant zero-latency responses even on entry-level Android devices.",
-            minRamGb = 3.0
-        ),
-        ModelProfile(
-            id = "qwen25_15b",
-            name = "Qwen 2.5 1.5B Trade Assistant (GGUF Q4_K_M)",
-            size = "980 MB",
-            sizeBytes = 1027604480L,
-            targetTokensPerSec = "18-28 tok/s",
-            description = "Balanced deep reasoning for complex structural engineering, NEC electrical code lookups, and multi-step formulas.",
-            minRamGb = 6.0
-        ),
-        ModelProfile(
-            id = "llama32_3b",
-            name = "Llama 3.2 3B Engineering (GGUF Q4_K_M)",
-            size = "1.85 GB",
-            sizeBytes = 1986000000L,
-            targetTokensPerSec = "10-18 tok/s",
-            description = "High-precision expert model for full construction estimation and building code synthesis. Requires 8GB+ RAM.",
-            minRamGb = 7.5
-        )
-    )
-}
 
-fun getRecommendedModel(specs: HardwareSpecs): String {
-    return when {
-        specs.totalRamGb >= 7.5 -> "llama32_3b"
-        specs.totalRamGb >= 5.5 -> "qwen25_15b"
-        else -> "smollm2_360m"
-    }
-}
 
 @Composable
 fun ChatPaletteCard(palette: ChatColorPalette) {

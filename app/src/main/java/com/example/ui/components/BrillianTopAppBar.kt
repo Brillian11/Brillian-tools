@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,10 +36,6 @@ fun BrillianTopAppBar(
     title: String,
     canNavigateBack: Boolean,
     onNavigateBack: () -> Unit,
-    isOnline: Boolean,
-    pendingSyncCount: Int,
-    isSyncing: Boolean,
-    onSyncBadgeClick: () -> Unit,
     onProfileClick: (() -> Unit)? = null,
     profileIcon: ImageVector? = null,
     onCustomizeClick: (() -> Unit)? = null,
@@ -75,6 +72,8 @@ fun BrillianTopAppBar(
                 }
                 Text(
                     text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     )
@@ -95,6 +94,7 @@ fun BrillianTopAppBar(
             }
         },
         actions = {
+
             if (onCustomizeClick != null) {
                 IconButton(
                     onClick = onCustomizeClick,

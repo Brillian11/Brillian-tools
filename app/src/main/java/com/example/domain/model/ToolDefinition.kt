@@ -564,6 +564,15 @@ data class ToolDefinition(
                 iconName = "SettingsRemote",
                 defaultSpan = 2
             ),
+            ToolDefinition(
+                id = "widget_sensor_detector",
+                title = "Device Sensors Detector",
+                description = "Audit on-device hardware sensors, diagnose tool compatibility & view hardware capabilities",
+                category = "Sensors",
+                iconName = "Sensors",
+                defaultSpan = 2,
+                keywords = listOf("sensor", "detector", "diagnostics", "hardware", "gyroscope", "magnetometer", "barometer", "accelerometer", "compatibility")
+            ),
 
             // Field Engineering & Site Suite
             ToolDefinition(

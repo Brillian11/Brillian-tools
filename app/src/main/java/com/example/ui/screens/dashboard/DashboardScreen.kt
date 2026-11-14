@@ -73,7 +73,10 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.SensorsOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -83,6 +86,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import com.example.domain.sensor.DeviceSensorDetector
+import com.example.domain.sensor.HardwareSensorSpec
+import com.example.ui.screens.sensors.SensorUnavailableDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -129,6 +135,19 @@ fun DashboardScreen(
     val notes by viewModel.quickNotes.collectAsState()
     val userSettings by viewModel.userSettings.collectAsState()
 
+    val context = LocalContext.current
+    val sensorDetector = remember { DeviceSensorDetector.getInstance(context) }
+    val auditReport by sensorDetector.auditReport.collectAsState()
+    var unavailableToolTarget by remember { mutableStateOf<Pair<String, String>?>(null) } // (id, title)
+
+    val handleToolLaunch: (String, String) -> Unit = { toolId, toolTitle ->
+        if (sensorDetector.isToolAvailable(toolId)) {
+            onNavigateToTool(toolId)
+        } else {
+            unavailableToolTarget = Pair(toolId, toolTitle)
+        }
+    }
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -148,7 +167,7 @@ fun DashboardScreen(
                 onValueChange = { viewModel.setSearchQuery(it) },
                 placeholder = { 
                     Text(
-                        "Search 109 tools & calculators...",
+                        "Search ${ToolDefinition.ALL_TOOLS.size} tools & calculators...",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     ) 
@@ -202,14 +221,18 @@ fun DashboardScreen(
                 } else {
                     searchResults.forEach { tool ->
                         val visuals = ToolIconMapper.getVisualsForTool(tool.id)
+                        val isToolAvailable = remember(tool.id, auditReport) { sensorDetector.isToolAvailable(tool.id) }
+                        val missingSensors = remember(tool.id, auditReport) { sensorDetector.getMissingSensorsForTool(tool.id) }
+
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                containerColor = if (isToolAvailable) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                             ),
                             shape = RoundedCornerShape(16.dp),
+                            border = if (!isToolAvailable) BorderStroke(1.dp, Color(0xFFFCA5A5)) else null,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onNavigateToTool(tool.id) }
+                                .clickable { handleToolLaunch(tool.id, tool.title) }
                                 .testTag("search_result_item_${tool.id}")
                         ) {
                             Row(
@@ -221,13 +244,13 @@ fun DashboardScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(visuals.containerColor),
+                                        .background(if (isToolAvailable) visuals.containerColor else Color(0xFFFEE2E2)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = visuals.icon,
+                                        imageVector = if (isToolAvailable) visuals.icon else Icons.Default.SensorsOff,
                                         contentDescription = null,
-                                        tint = visuals.contentColor,
+                                        tint = if (isToolAvailable) visuals.contentColor else Color(0xFFDC2626),
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -238,11 +261,29 @@ fun DashboardScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    Text(
-                                        text = tool.category,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = tool.category,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (!isToolAvailable) {
+                                            Surface(
+                                                color = Color(0xFFFEE2E2),
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Missing Sensor",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                                    color = Color(0xFF991B1B),
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = tool.description,
@@ -251,11 +292,24 @@ fun DashboardScreen(
                                         maxLines = 2
                                     )
                                 }
-                                Button(
-                                    onClick = { onNavigateToTool(tool.id) },
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text("Open")
+                                if (isToolAvailable) {
+                                    Button(
+                                        onClick = { handleToolLaunch(tool.id, tool.title) },
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text("Open")
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = { handleToolLaunch(tool.id, tool.title) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFFDC2626),
+                                            contentColor = Color.White
+                                        )
+                                    ) {
+                                        Text("Unavailable")
+                                    }
                                 }
                             }
                         }
@@ -305,9 +359,12 @@ fun DashboardScreen(
                             Modifier.fillMaxWidth(0.48f)
                         }
 
+                        val isWidgetAvailable = remember(widget.id, auditReport) { sensorDetector.isToolAvailable(widget.id) }
+
                         DashboardWidgetCard(
                             widget = widget,
-                            onOpenTool = { onNavigateToTool(widget.id) },
+                            isAvailable = isWidgetAvailable,
+                            onOpenTool = { handleToolLaunch(widget.id, widget.title) },
                             modifier = cardModifier
                         ) {
                             when (widget.id) {
@@ -317,31 +374,40 @@ fun DashboardScreen(
                                     onToggleTask = { viewModel.toggleTask(it) }
                                 )
                                 "widget_timer" -> MiniFocusTimerWidget(
-                                    onOpenTimer = { onNavigateToTool("widget_timer") }
+                                    onOpenTimer = { handleToolLaunch("widget_timer", "Focus Timer") }
                                 )
                                 "widget_unit_converter" -> MiniConverterWidget(
-                                    onOpenConverter = { onNavigateToTool("widget_unit_converter") }
+                                    onOpenConverter = { handleToolLaunch("widget_unit_converter", "Unit Converter") }
                                 )
                                 "widget_color_palette", "widget_color_tools" -> MiniColorWidget(
-                                    onOpenDevTools = { onNavigateToTool("widget_color_tools") }
+                                    onOpenDevTools = { handleToolLaunch("widget_color_tools", "Color Studio") }
                                 )
                                 "widget_notes" -> MiniNotesWidget(
                                     notes = notes,
-                                    onOpenNotes = { onNavigateToTool("widget_notes") }
-                                )
-                                "widget_expense" -> MiniExpenseWidget(
-                                    onQuickLog = { amt, cat -> viewModel.quickLogExpense(amt, cat) },
-                                    onOpenExpense = { onNavigateToTool("widget_expense") }
+                                    onOpenNotes = { handleToolLaunch("widget_notes", "Quick Notes") }
                                 )
                                 else -> DefaultToolMiniWidget(
                                     subtitle = widget.subtitle,
-                                    onOpenTool = { onNavigateToTool(widget.id) }
+                                    onOpenTool = { handleToolLaunch(widget.id, widget.title) }
                                 )
                             }
                         }
                     }
                 }
             }
+        }
+
+        unavailableToolTarget?.let { (toolId, toolTitle) ->
+            val missing = sensorDetector.getMissingSensorsForTool(toolId)
+            SensorUnavailableDialog(
+                toolTitle = toolTitle,
+                missingSensors = missing,
+                onDismiss = { unavailableToolTarget = null },
+                onOpenSensorsDetector = {
+                    unavailableToolTarget = null
+                    onNavigateToTool("widget_sensor_detector")
+                }
+            )
         }
     }
 }
@@ -351,6 +417,7 @@ fun DashboardWidgetCard(
     widget: DashboardWidgetEntity,
     onOpenTool: () -> Unit,
     modifier: Modifier = Modifier,
+    isAvailable: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val visuals = ToolIconMapper.getVisualsForTool(widget.id)
@@ -361,13 +428,19 @@ fun DashboardWidgetCard(
         } else null
     } ?: MaterialTheme.colorScheme.surfaceVariant
 
-    val strokeColor = remember(widget.strokeColorHex) {
-        if (widget.strokeColorHex.isNotBlank()) {
+    val strokeColor = remember(widget.strokeColorHex, isAvailable) {
+        if (!isAvailable) {
+            Color(0xFFFCA5A5)
+        } else if (widget.strokeColorHex.isNotBlank()) {
             try { Color(android.graphics.Color.parseColor(widget.strokeColorHex)) } catch (_: Exception) { null }
         } else null
     } ?: MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
 
-    val borderStroke = if (widget.strokeWidthDp > 0) BorderStroke(widget.strokeWidthDp.dp, strokeColor) else null
+    val borderStroke = if (!isAvailable) {
+        BorderStroke(1.dp, Color(0xFFFCA5A5))
+    } else if (widget.strokeWidthDp > 0) {
+        BorderStroke(widget.strokeWidthDp.dp, strokeColor)
+    } else null
     val displayIcon = if (widget.iconName.isNotBlank()) ToolIconMapper.getIconByName(widget.iconName) else visuals.icon
 
     Card(
@@ -441,22 +514,32 @@ fun DashboardWidgetCard(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(visuals.containerColor),
+                                .background(if (isAvailable) visuals.containerColor else Color(0xFFFEE2E2)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = displayIcon,
+                                imageVector = if (isAvailable) displayIcon else Icons.Default.SensorsOff,
                                 contentDescription = null,
-                                tint = visuals.contentColor,
+                                tint = if (isAvailable) visuals.contentColor else Color(0xFFDC2626),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = widget.title,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = widget.title,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!isAvailable) {
+                                Text(
+                                    text = "Requires Sensor",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                    color = Color(0xFFDC2626)
+                                )
+                            }
+                        }
                     }
 
                     IconButton(
@@ -646,33 +729,6 @@ fun MiniNotesWidget(
         } else {
             notes.take(2).forEach { note ->
                 Text("• ${note.title}", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), maxLines = 1)
-            }
-        }
-    }
-}
-
-@Composable
-fun MiniExpenseWidget(
-    onQuickLog: (Double, String) -> Unit,
-    onOpenExpense: () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Quick Log:", style = MaterialTheme.typography.labelSmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(
-                onClick = { onQuickLog(5.0, "Coffee/Snack") },
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("+$5")
-            }
-            OutlinedButton(
-                onClick = { onQuickLog(15.0, "Lunch/Food") },
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("+$15")
             }
         }
     }

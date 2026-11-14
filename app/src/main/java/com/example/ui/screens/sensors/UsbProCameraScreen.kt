@@ -1061,17 +1061,23 @@ fun UsbProCameraScreen(
             IconButton(
                 onClick = { viewModel.toggleFlashlight() },
                 modifier = Modifier
-                    .size(42.dp)
-                    .background(Color.Black.copy(alpha = 0.55f), CircleShape)
-                    .border(1.dp, if (isFlashlightOn) Color(0xFFFFCC00) else Color.White.copy(alpha = 0.2f), CircleShape)
+                    .minimumInteractiveComponentSize()
                     .testTag("btn_camera_flash_toggle")
             ) {
-                Icon(
-                    imageVector = if (isFlashlightOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                    contentDescription = "Flashlight",
-                    tint = if (isFlashlightOn) Color(0xFFFFCC00) else Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .border(1.dp, if (isFlashlightOn) Color(0xFFFFCC00) else Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isFlashlightOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                        contentDescription = "Flashlight",
+                        tint = if (isFlashlightOn) Color(0xFFFFCC00) else Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
 
             // CENTER: Quick Contextual Action Pills for Active Camera Tool
@@ -1079,7 +1085,9 @@ fun UsbProCameraScreen(
                 shape = RoundedCornerShape(20.dp),
                 color = Color(0xFF0F172A).copy(alpha = 0.82f),
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .padding(horizontal = 4.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1291,17 +1299,23 @@ fun UsbProCameraScreen(
             IconButton(
                 onClick = onNavigateBack,
                 modifier = Modifier
-                    .size(42.dp)
-                    .background(Color.Black.copy(alpha = 0.55f), CircleShape)
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                    .minimumInteractiveComponentSize()
                     .testTag("btn_camera_close")
             ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close Camera",
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Camera",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
 

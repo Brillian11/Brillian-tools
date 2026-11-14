@@ -48,7 +48,6 @@ import com.example.ui.screens.tools.QuickNotesScreen
 import com.example.ui.screens.tools.QuickNotesViewModel
 import com.example.ui.screens.tools.UnitConverterScreen
 import com.example.ui.screens.tools.UnitConverterViewModel
-import com.example.ui.screens.tools.MultipurposeCameraHubScreen
 import com.example.ui.screens.work.WorkTrackingScreen
 import com.example.ui.screens.work.WorkTrackingViewModel
 import com.example.ui.screens.library.LibraryScreen
@@ -56,6 +55,9 @@ import com.example.ui.screens.library.LibraryViewModel
 import com.example.ui.screens.ai.BrillianAiScreen
 import kotlinx.coroutines.launch
 
+import androidx.compose.ui.platform.LocalContext
+import com.example.domain.sensor.DeviceSensorDetector
+import com.example.ui.screens.sensors.SensorUnavailableDialog
 import com.example.ui.utils.AppLocalization
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -68,6 +70,9 @@ fun MainTabScreen(
     modifier: Modifier = Modifier
 ) {
     val userSettings by dashboardViewModel.userSettings.collectAsState()
+    val context = LocalContext.current
+    val sensorDetector = remember { DeviceSensorDetector.getInstance(context) }
+    var showUnavailableCameraDialog by remember { mutableStateOf(false) }
     val isIndonesian = userSettings.languageCode == "id"
     val showAiScreen by dashboardViewModel.isCopilotOpen.collectAsState()
 
@@ -77,12 +82,6 @@ fun MainTabScreen(
 
     val pagerState = rememberPagerState(pageCount = { 5 })
     val coroutineScope = rememberCoroutineScope()
-
-    var showCameraHubScreen by remember { mutableStateOf(false) }
-
-    androidx.activity.compose.BackHandler(enabled = showCameraHubScreen) {
-        showCameraHubScreen = false
-    }
 
     var isFabExpanded by remember { mutableStateOf(true) }
     val nestedScrollConnection = remember {
@@ -108,7 +107,7 @@ fun MainTabScreen(
 
     Scaffold(
         bottomBar = {
-            if (!showAiScreen && !showCameraHubScreen) {
+            if (!showAiScreen) {
                 NavigationBar(
                     modifier = Modifier.testTag("main_bottom_nav_bar")
                 ) {
@@ -212,7 +211,7 @@ fun MainTabScreen(
         }
 
             // Floating Buttons in bottom left above navbar (Only shown on Tools tab, page 0)
-            if (!showAiScreen && !showCameraHubScreen && pagerState.currentPage == 0) {
+            if (!showAiScreen && pagerState.currentPage == 0) {
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -223,7 +222,13 @@ fun MainTabScreen(
                 ) {
                     // Full Floating Camera Button
                     Surface(
-                        onClick = { onNavigateToTool("tool_usb_pro_camera") },
+                        onClick = {
+                            if (sensorDetector.isToolAvailable("widget_usb_pro_camera")) {
+                                onNavigateToTool("tool_usb_pro_camera")
+                            } else {
+                                showUnavailableCameraDialog = true
+                            }
+                        },
                         modifier = Modifier
                             .size(56.dp)
                             .testTag("btn_floating_camera"),
@@ -263,22 +268,6 @@ fun MainTabScreen(
                 }
             }
 
-            // Camera Hub Screen Overlay
-            AnimatedVisibility(
-                visible = showCameraHubScreen,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it }
-            ) {
-                MultipurposeCameraHubScreen(
-                    onNavigateToTool = onNavigateToTool,
-                    isIndonesian = isIndonesian,
-                    onClose = { showCameraHubScreen = false },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                )
-            }
-
             // AI Screen Overlay
             AnimatedVisibility(
                 visible = showAiScreen,
@@ -302,6 +291,18 @@ fun MainTabScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
+                )
+            }
+
+            if (showUnavailableCameraDialog) {
+                SensorUnavailableDialog(
+                    toolTitle = "USB Full-Screen Pro Camera",
+                    missingSensors = sensorDetector.getMissingSensorsForTool("widget_usb_pro_camera"),
+                    onDismiss = { showUnavailableCameraDialog = false },
+                    onOpenSensorsDetector = {
+                        showUnavailableCameraDialog = false
+                        onNavigateToTool("widget_sensor_detector")
+                    }
                 )
             }
         }

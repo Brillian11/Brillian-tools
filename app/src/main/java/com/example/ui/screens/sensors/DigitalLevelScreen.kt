@@ -1,5 +1,7 @@
 package com.example.ui.screens.sensors
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,7 +42,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,18 @@ fun DigitalLevelScreen(
     viewModel: DigitalLevelViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        val originalOrientation = activity?.requestedOrientation
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        onDispose {
+            if (originalOrientation != null) {
+                activity.requestedOrientation = originalOrientation
+            }
+        }
+    }
+
     val sensorData by viewModel.sensorData.collectAsState()
     val isHold by viewModel.isHold.collectAsState()
     val isBuzzerEnabled by viewModel.isBuzzerEnabled.collectAsState()
@@ -91,7 +106,7 @@ fun DigitalLevelScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Real-time IMU incline sensor with central horizontal straight line level indicator and 2D bullseye gauge.",
+                        text = "Real-time IMU incline sensor with stable horizontal straight line level guide and 2D bullseye gauge.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -235,69 +250,67 @@ fun StraightLineLevelGauge(
         val tubeHeight = 36f
         val tubeTop = cy - (tubeHeight / 2f)
 
-        rotate(degrees = -sensorData.rollDegrees, pivot = Offset(cx, cy)) {
-            // Draw outer spirit tube background
-            drawRoundRect(
-                color = bgColor,
-                topLeft = Offset(10f, tubeTop),
-                size = Size(w - 20f, tubeHeight),
-                cornerRadius = CornerRadius(18f, 18f)
-            )
-            drawRoundRect(
-                color = lineColor,
-                topLeft = Offset(10f, tubeTop),
-                size = Size(w - 20f, tubeHeight),
-                cornerRadius = CornerRadius(18f, 18f),
-                style = Stroke(width = 3f)
-            )
+        // Draw outer spirit tube background (stable & horizontal, like camera level guide)
+        drawRoundRect(
+            color = bgColor,
+            topLeft = Offset(10f, tubeTop),
+            size = Size(w - 20f, tubeHeight),
+            cornerRadius = CornerRadius(18f, 18f)
+        )
+        drawRoundRect(
+            color = lineColor,
+            topLeft = Offset(10f, tubeTop),
+            size = Size(w - 20f, tubeHeight),
+            cornerRadius = CornerRadius(18f, 18f),
+            style = Stroke(width = 3f)
+        )
 
-            // Draw Center Zero Straight Line Axis across the whole middle
-            drawLine(
-                color = if (isLevel) Color(0xFF2E7D32) else Color(0xFF64748B),
-                start = Offset(20f, cy),
-                end = Offset(w - 20f, cy),
-                strokeWidth = 4f
-            )
+        // Draw Center Zero Straight Line Axis across the whole middle
+        drawLine(
+            color = if (isLevel) Color(0xFF2E7D32) else Color(0xFF64748B),
+            start = Offset(20f, cy),
+            end = Offset(w - 20f, cy),
+            strokeWidth = 4f
+        )
 
-            // Center Target Zone Vertical Tick Lines (0° tolerance boundaries)
-            val zoneWidth = 50f
-            drawLine(
-                color = activeColor,
-                start = Offset(cx - zoneWidth / 2f, tubeTop - 6f),
-                end = Offset(cx - zoneWidth / 2f, tubeTop + tubeHeight + 6f),
-                strokeWidth = 3f
-            )
-            drawLine(
-                color = activeColor,
-                start = Offset(cx + zoneWidth / 2f, tubeTop - 6f),
-                end = Offset(cx + zoneWidth / 2f, tubeTop + tubeHeight + 6f),
-                strokeWidth = 3f
-            )
-            // Center Line Tick
-            drawLine(
-                color = activeColor,
-                start = Offset(cx, tubeTop - 10f),
-                end = Offset(cx, tubeTop + tubeHeight + 10f),
-                strokeWidth = 4f
-            )
+        // Center Target Zone Vertical Tick Lines (0° tolerance boundaries)
+        val zoneWidth = 50f
+        drawLine(
+            color = activeColor,
+            start = Offset(cx - zoneWidth / 2f, tubeTop - 6f),
+            end = Offset(cx - zoneWidth / 2f, tubeTop + tubeHeight + 6f),
+            strokeWidth = 3f
+        )
+        drawLine(
+            color = activeColor,
+            start = Offset(cx + zoneWidth / 2f, tubeTop - 6f),
+            end = Offset(cx + zoneWidth / 2f, tubeTop + tubeHeight + 6f),
+            strokeWidth = 3f
+        )
+        // Center Line Tick
+        drawLine(
+            color = activeColor,
+            start = Offset(cx, tubeTop - 10f),
+            end = Offset(cx, tubeTop + tubeHeight + 10f),
+            strokeWidth = 4f
+        )
 
-            // Calculate horizontal bubble position based on roll angle
-            val clampedRoll = sensorData.rollDegrees.coerceIn(-30f, 30f)
-            val maxOffset = (w / 2f) - 40f
-            val bubbleX = cx + (clampedRoll / 30f) * maxOffset
+        // Calculate horizontal bubble position based on roll angle (smooth sliding along stable line)
+        val clampedRoll = sensorData.rollDegrees.coerceIn(-30f, 30f)
+        val maxOffset = (w / 2f) - 40f
+        val bubbleX = cx + (clampedRoll / 30f) * maxOffset
 
-            // Draw level bubble along horizontal straight line
-            drawCircle(
-                color = activeColor,
-                radius = 16f,
-                center = Offset(bubbleX, cy)
-            )
-            drawCircle(
-                color = Color.White,
-                radius = 6f,
-                center = Offset(bubbleX, cy)
-            )
-        }
+        // Draw level bubble along horizontal straight line
+        drawCircle(
+            color = activeColor,
+            radius = 16f,
+            center = Offset(bubbleX, cy)
+        )
+        drawCircle(
+            color = Color.White,
+            radius = 6f,
+            center = Offset(bubbleX, cy)
+        )
     }
 }
 

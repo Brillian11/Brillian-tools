@@ -2,9 +2,12 @@ package com.example.ui.utils
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Architecture
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Cable
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Category
@@ -12,6 +15,7 @@ import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.CropRotate
 import androidx.compose.material.icons.filled.DeviceThermostat
 import androidx.compose.material.icons.filled.ElectricMeter
 import androidx.compose.material.icons.filled.Engineering
@@ -23,6 +27,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.HomeWork
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lightbulb
@@ -32,6 +37,7 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PrecisionManufacturing
+import androidx.compose.material.icons.filled.Roofing
 import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.ScreenRotation
@@ -39,7 +45,9 @@ import androidx.compose.material.icons.filled.Sensors
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SettingsRemote
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Splitscreen
 import androidx.compose.material.icons.filled.SquareFoot
+import androidx.compose.material.icons.filled.Stairs
 import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -151,6 +159,11 @@ object ToolIconMapper {
                 icon = Icons.Default.Sensors,
                 containerColor = Color(0xFFE0F2FE),
                 contentColor = Color(0xFF0369A1)
+            )
+            "widget_sensor_detector" -> ToolVisuals(
+                icon = Icons.Default.Sensors,
+                containerColor = Color(0xFFEDE9FE),
+                contentColor = Color(0xFF6D28D9)
             )
             "widget_laser_measure" -> ToolVisuals(
                 icon = Icons.Default.Bluetooth,
@@ -473,7 +486,7 @@ object ToolIconMapper {
                 containerColor = Color(0xFFFCE7F3),
                 contentColor = Color(0xFFBE185D)
             )
-            "widget_expense", "AccountBalanceWallet" -> ToolVisuals(
+            "AccountBalanceWallet" -> ToolVisuals(
                 icon = Icons.Default.AccountBalanceWallet,
                 containerColor = Color(0xFFD1FAE5),
                 contentColor = Color(0xFF047857)
@@ -646,12 +659,33 @@ object ToolIconMapper {
 
     fun getIconByName(iconName: String): ImageVector {
         return when (iconName) {
+            "Air" -> Icons.Default.Air
+            "AutoAwesome" -> Icons.Default.AutoAwesome
             "Architecture" -> Icons.Default.Architecture
+            "Bluetooth" -> Icons.Default.Bluetooth
+            "Bolt" -> Icons.Default.Bolt
+            "Cable" -> Icons.Default.Cable
             "ContentCut" -> Icons.Default.ContentCut
+            "Construction" -> Icons.Default.Construction
+            "CropRotate" -> Icons.Default.CropRotate
             "TableChart" -> Icons.Default.TableChart
             "Engineering" -> Icons.Default.Engineering
+            "Inbox" -> Icons.Default.Inbox
             "Layers" -> Icons.Default.Layers
+            "LightMode" -> Icons.Default.LightMode
+            "MenuBook" -> Icons.Default.MenuBook
+            "Roofing" -> Icons.Default.Roofing
+            "RotateRight" -> Icons.Default.RotateRight
+            "Sensors" -> Icons.Default.Sensors
+            "SettingsRemote" -> Icons.Default.SettingsRemote
+            "Speed" -> Icons.Default.Speed
+            "Splitscreen" -> Icons.Default.Splitscreen
+            "Stairs" -> Icons.Default.Stairs
+            "Straighten" -> Icons.Default.Straighten
             "Terrain" -> Icons.Default.Terrain
+            "Texture" -> Icons.Default.Texture
+            "TrendingDown" -> Icons.Default.TrendingDown
+            "Tune" -> Icons.Default.Tune
             "HomeWork" -> Icons.Default.HomeWork
             "GridOn" -> Icons.Default.GridOn
             "Water" -> Icons.Default.Water
@@ -690,14 +724,17 @@ object ToolIconMapper {
     }
 
     val AVAILABLE_ICONS = listOf(
-        "Architecture", "ContentCut", "TableChart", "Engineering",
-        "Layers", "Terrain", "HomeWork", "GridOn", "Water", "PrecisionManufacturing",
-        "ScreenRotation", "Explore", "GraphicEq", "FlashOn", "Calculate",
-        "Camera", "SquareFoot", "WbSunny", "CellTower", "HealthAndSafety", "Science",
-        "DeviceThermostat", "Videocam", "ElectricMeter", "Landscape", "Lightbulb",
-        "Category", "CheckCircle", "Timer", "SwapHoriz",
-        "StickyNote2", "Palette", "AccountBalanceWallet", "Settings",
-        "Navigation", "Foundation", "Grain", "LocalShipping", "WaterDrop"
+        "Air", "AutoAwesome", "Architecture", "Bluetooth", "Bolt", "Cable",
+        "ContentCut", "Construction", "CropRotate", "TableChart", "Engineering",
+        "Inbox", "Layers", "LightMode", "MenuBook", "Roofing", "RotateRight",
+        "Sensors", "SettingsRemote", "Speed", "Splitscreen", "Stairs",
+        "Straighten", "Terrain", "Texture", "TrendingDown", "Tune", "HomeWork",
+        "GridOn", "Water", "PrecisionManufacturing", "ScreenRotation", "Explore",
+        "GraphicEq", "FlashOn", "Calculate", "Camera", "SquareFoot", "WbSunny",
+        "CellTower", "HealthAndSafety", "Science", "DeviceThermostat", "Videocam",
+        "ElectricMeter", "Landscape", "Lightbulb", "Category", "CheckCircle",
+        "Timer", "SwapHoriz", "StickyNote2", "Palette", "AccountBalanceWallet",
+        "Settings", "Navigation", "Foundation", "Grain", "LocalShipping", "WaterDrop"
     )
 
     val PRESET_BACKGROUND_COLORS = listOf(

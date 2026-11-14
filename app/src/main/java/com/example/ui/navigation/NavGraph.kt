@@ -46,7 +46,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import android.app.Activity
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -92,6 +96,7 @@ import com.example.ui.screens.civil.StationingCogoViewModel
 import com.example.ui.screens.civil.StormwaterRationalScreen
 import com.example.ui.screens.civil.StormwaterRationalViewModel
 import com.example.ui.screens.welcome.WelcomeScreen
+import com.example.ui.screens.loading.AppLoadingScreen
 import com.example.ui.screens.painting.PaintingCoatingStudioScreen
 import com.example.ui.screens.painting.PaintingCoatingStudioViewModel
 import com.example.ui.screens.metalworks.MetalworksStudioScreen
@@ -179,6 +184,7 @@ import com.example.ui.screens.sensors.LuxMeterScreen
 import com.example.ui.screens.sensors.LuxMeterViewModel
 import com.example.ui.screens.sensors.PlumbBobScreen
 import com.example.ui.screens.sensors.PlumbBobViewModel
+import com.example.ui.screens.sensors.SensorDetectorScreen
 import com.example.ui.screens.sensors.StrobeTachometerScreen
 import com.example.ui.screens.sensors.StrobeTachometerViewModel
 import com.example.ui.screens.sensors.StudDetectorScreen
@@ -198,8 +204,7 @@ import com.example.ui.screens.sensors.VibrationAnalyzerViewModel
 import com.example.ui.screens.settings.AboutScreen
 import com.example.ui.screens.settings.SettingsScreen
 import com.example.ui.screens.settings.SettingsViewModel
-import com.example.ui.screens.sync.SyncQueueScreen
-import com.example.ui.screens.sync.SyncQueueViewModel
+
 import com.example.ui.screens.tools.ColorDevToolsScreen
 import com.example.ui.screens.tools.ColorDevToolsViewModel
 import com.example.ui.screens.tools.FocusTimerScreen
@@ -252,9 +257,7 @@ fun NavGraph(
 
     val dashboardViewModel: DashboardViewModel = viewModel(factory = actualFactory)
 
-    val isOnline by dashboardViewModel.isOnlineMode.collectAsState()
-    val pendingSyncCount by dashboardViewModel.pendingSyncCount.collectAsState()
-    val isSyncing by dashboardViewModel.isSyncing.collectAsState()
+
     val isCopilotOpen by dashboardViewModel.isCopilotOpen.collectAsState()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -265,8 +268,7 @@ fun NavGraph(
     val topBarTitle = when (currentRoute) {
         ScreenRoutes.Dashboard.route -> "Brillian Tools"
         ScreenRoutes.CustomizeDashboard.route -> "Customize Dashboard"
-        ScreenRoutes.ToolCatalog.route -> "Tool Catalog"
-        ScreenRoutes.SyncQueue.route -> "Offline Sync Center"
+
         ScreenRoutes.Settings.route -> "App Settings"
         ScreenRoutes.KerfBending.route -> "Kerf Bending"
         ScreenRoutes.CutlistOptimizer.route -> "Cut List Optimizer (1D & 2D)"
@@ -347,6 +349,9 @@ fun NavGraph(
         ScreenRoutes.DuctSizer.route -> "Duct Sizer & Velocity"
         ScreenRoutes.ExpansionTank.route -> "Hydronic Expansion Tank"
         ScreenRoutes.SlingAngle.route -> "Rigging Sling Angle Sizer"
+        ScreenRoutes.SensorDetector.route -> "Device Sensors Detector"
+        ScreenRoutes.OutdoorActivities.route -> "Outdoor Activities & Topo Suite"
+        ScreenRoutes.MatrixSolver.route -> "2D Matrix & Linear System Solver"
         else -> "Brillian Tools"
     }
 
@@ -365,7 +370,22 @@ fun NavGraph(
     // Read directly from repository value synchronously to avoid any flow collection/recomposition lag
     val isFirstLaunch = remember { actualFactory.settingsRepository.settings.value.isFirstLaunch }
     val isFullscreenRoute = currentRoute == ScreenRoutes.UsbProCamera.route || currentRoute.startsWith("tool_metalworks_studio")
-    val showTopBar = currentRoute != ScreenRoutes.Welcome.route && !isFullscreenRoute && !isCopilotOpen
+    val hideTopBarForCopilot = isCopilotOpen && currentRoute == ScreenRoutes.Dashboard.route
+    val showTopBar = currentRoute != ScreenRoutes.Welcome.route && currentRoute != ScreenRoutes.AppLoading.route && !isFullscreenRoute && !hideTopBarForCopilot
+
+    // Ensure status bar icons have high contrast and remain visible on all routes
+    val view = LocalView.current
+    val isDarkSurfaceUnderStatusBar = if (isFullscreenRoute) true else !userSettings.isLightMode
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !isDarkSurfaceUnderStatusBar
+                insetsController.isAppearanceLightNavigationBars = !userSettings.isLightMode
+            }
+        }
+    }
 
     if (showWorkspaceProfileDialog) {
         AlertDialog(
@@ -499,10 +519,6 @@ fun NavGraph(
                     title = topBarTitle,
                     canNavigateBack = canNavigateBack,
                     onNavigateBack = { navController.popBackStack() },
-                    isOnline = isOnline,
-                    pendingSyncCount = pendingSyncCount,
-                    isSyncing = isSyncing,
-                    onSyncBadgeClick = { navController.navigate(ScreenRoutes.SyncQueue.route) },
                     onProfileClick = if (currentRoute == ScreenRoutes.Dashboard.route) {
                         { showWorkspaceProfileDialog = true }
                     } else null,
@@ -520,13 +536,24 @@ fun NavGraph(
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         val isMetricSystem = userSettings.unitSystem == "Metric"
-        val effectivePadding = if (isFullscreenRoute) androidx.compose.foundation.layout.PaddingValues(0.dp) else innerPadding
+        val effectivePadding = if (isFullscreenRoute || !showTopBar) androidx.compose.foundation.layout.PaddingValues(0.dp) else innerPadding
         Box(modifier = Modifier.fillMaxSize().padding(effectivePadding)) {
             NavHost(
                 navController = navController,
-                startDestination = if (isFirstLaunch) ScreenRoutes.Welcome.route else ScreenRoutes.Dashboard.route,
+                startDestination = if (isFirstLaunch) ScreenRoutes.AppLoading.route else ScreenRoutes.Dashboard.route,
                 modifier = Modifier.fillMaxSize()
             ) {
+            composable(ScreenRoutes.AppLoading.route) {
+                AppLoadingScreen(
+                    onInitializationComplete = {
+                        val destination = if (isFirstLaunch) ScreenRoutes.Welcome.route else ScreenRoutes.Dashboard.route
+                        navController.navigate(destination) {
+                            popUpTo(ScreenRoutes.AppLoading.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(ScreenRoutes.Welcome.route) {
                 WelcomeScreen(
                     viewModel = dashboardViewModel,
@@ -637,7 +664,12 @@ fun NavGraph(
                             "widget_pipe_hydro_test" -> ScreenRoutes.MetalworksStudio.createRoute(toolId)
                             "widget_color_palette", "widget_color_tools" -> ScreenRoutes.ColorDevTools.route
                             "widget_notes" -> ScreenRoutes.QuickNotes.route
-                            "widget_settings" -> ScreenRoutes.Settings.route
+                            "widget_sensor_detector", ScreenRoutes.SensorDetector.route -> ScreenRoutes.SensorDetector.route
+                            "widget_settings", ScreenRoutes.Settings.route -> ScreenRoutes.Settings.route
+                            "widget_matrix_solver", ScreenRoutes.MatrixSolver.route -> ScreenRoutes.MatrixSolver.route
+                            ScreenRoutes.ToolCatalog.route -> ScreenRoutes.ToolCatalog.route
+                            ScreenRoutes.CustomizeDashboard.route -> ScreenRoutes.CustomizeDashboard.route
+                            ScreenRoutes.About.route -> ScreenRoutes.About.route
                             else -> if (toolId.startsWith("tool_") || toolId.startsWith("screen_")) toolId else ScreenRoutes.ToolCatalog.route
                         }
                         navController.navigate(route)
@@ -659,7 +691,7 @@ fun NavGraph(
                     viewModel = catalogCustomizeViewModel,
                     onLaunchTool = { toolId ->
                         val route = when (toolId) {
-                            "widget_usb_pro_camera" -> ScreenRoutes.UsbProCamera.route
+                            "widget_usb_pro_camera", "tool_usb_pro_camera" -> ScreenRoutes.UsbProCamera.route
                             "widget_qr_code_scanner" -> ScreenRoutes.QrCodeScanner.route
                             "widget_psychrometric" -> ScreenRoutes.Psychrometric.route
                             "widget_refrigerant" -> ScreenRoutes.Refrigerant.route
@@ -752,7 +784,9 @@ fun NavGraph(
                             "widget_pipe_hydro_test" -> ScreenRoutes.MetalworksStudio.createRoute(toolId)
                             "widget_color_palette", "widget_color_tools" -> ScreenRoutes.ColorDevTools.route
                             "widget_notes" -> ScreenRoutes.QuickNotes.route
+                            "widget_sensor_detector" -> ScreenRoutes.SensorDetector.route
                             "widget_settings" -> ScreenRoutes.Settings.route
+                            "widget_matrix_solver" -> ScreenRoutes.MatrixSolver.route
                             else -> ScreenRoutes.Dashboard.route
                         }
                         navController.navigate(route)
@@ -760,10 +794,7 @@ fun NavGraph(
                 )
             }
 
-            composable(ScreenRoutes.SyncQueue.route) {
-                val syncViewModel: SyncQueueViewModel = viewModel(factory = actualFactory)
-                SyncQueueScreen(viewModel = syncViewModel)
-            }
+
 
             composable(ScreenRoutes.Settings.route) {
                 val settingsViewModel: SettingsViewModel = viewModel(factory = actualFactory)
@@ -771,12 +802,38 @@ fun NavGraph(
                     viewModel = settingsViewModel,
                     onNavigateToAbout = {
                         navController.navigate(ScreenRoutes.About.route)
+                    },
+                    onNavigateToSensorsDetector = {
+                        navController.navigate(ScreenRoutes.SensorDetector.route)
                     }
+                )
+            }
+
+            composable(ScreenRoutes.SensorDetector.route) {
+                SensorDetectorScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
             composable(ScreenRoutes.About.route) {
                 AboutScreen()
+            }
+
+            composable(ScreenRoutes.MatrixSolver.route) {
+                val matrixDef = remember { com.example.domain.agent.DynamicToolEngine.DYNAMIC_TOOLS["widget_matrix_solver"] }
+                if (matrixDef != null) {
+                    val module = remember(matrixDef) { com.example.domain.agent.DynamicToolModule(matrixDef) }
+                    var toolState by remember { mutableStateOf(module.createInitialState(emptyMap())) }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp)
+                    ) {
+                        val content = module.getComposableView(toolState) { updated -> toolState = updated }
+                        content()
+                    }
+                }
             }
 
             // Woodworking Suite

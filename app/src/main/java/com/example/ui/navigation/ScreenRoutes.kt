@@ -4,7 +4,6 @@ sealed class ScreenRoutes(val route: String) {
     object Dashboard : ScreenRoutes("dashboard")
     object CustomizeDashboard : ScreenRoutes("customize_dashboard")
     object ToolCatalog : ScreenRoutes("tool_catalog")
-    object SyncQueue : ScreenRoutes("sync_queue")
     object Settings : ScreenRoutes("app_settings")
     
     // Woodworking Suite Routes
@@ -117,4 +116,7 @@ sealed class ScreenRoutes(val route: String) {
     // New requested tools
     object UsbProCamera : ScreenRoutes("tool_usb_pro_camera")
     object QrCodeScanner : ScreenRoutes("tool_qr_code_scanner")
+    object SensorDetector : ScreenRoutes("tool_sensor_detector")
+    object MatrixSolver : ScreenRoutes("tool_matrix_solver")
+    object AppLoading : ScreenRoutes("app_loading")
 }

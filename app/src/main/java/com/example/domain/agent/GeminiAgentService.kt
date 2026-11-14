@@ -2,6 +2,7 @@ package com.example.domain.agent
 
 import android.util.Log
 import com.example.BuildConfig
+import com.example.domain.model.ToolDefinition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -123,8 +124,9 @@ class GeminiAgentService(
 
             val cutlistDbSummary = if (context != null) com.example.domain.math.CutlistDraftStore.getSavedProjectsSummary(context) else "No saved cutlist projects context available."
 
+            val totalToolsCount = ToolDefinition.ALL_TOOLS.size
             val systemPrompt = if (isIndonesian) {
-                "Anda adalah Brillian Copilot, asisten AI teknik dan pertukangan profesional. APLIKASI INI MEMILIKI SUITE LENGKAP SEBANYAK PERSIS 109 ALAT TEKNIK/PERTUKANGAN (termasuk Carpentry & Multi-Stock Cut List Optimizer, Electrical, Plumbing, HVAC, Masonry, Civil Engineering, AR Sizing, dan Color Matching/Painting Coating Studio). Katakan kepada pengguna dengan percaya diri bahwa aplikasi ini memiliki 109 alat jika mereka bertanya.\n\n" +
+                "Anda adalah Brillian Copilot, asisten AI teknik dan pertukangan profesional. APLIKASI INI MEMILIKI SUITE LENGKAP SEBANYAK PERSIS $totalToolsCount ALAT TEKNIK/PERTUKANGAN (termasuk Carpentry & Multi-Stock Cut List Optimizer, Electrical, Plumbing, HVAC, Masonry, Civil Engineering, AR Sizing, dan Color Matching/Painting Coating Studio). Katakan kepada pengguna dengan percaya diri bahwa aplikasi ini memiliki $totalToolsCount alat jika mereka bertanya.\n\n" +
                 "DATABASE PROYEK CUTLIST DALAM APLIKASI:\n" +
                 "$cutlistDbSummary\n\n" +
                 "ATURAN MENTION & REVISI PROYEK FURNITUR / WOODWORKING:\n" +
@@ -157,7 +159,7 @@ class GeminiAgentService(
                 "Contoh:\n" +
                 "[COLOR: Warm Hug Cozy | Alabaster (SW 7008) | #F2F0EB | Urbane Bronze (SW 7048) | #534F4A | 98 | Sherwin-Williams | Warm Hygge | Kombinasi Alabaster krem dan Urbane Bronze yang sangat nyaman.]"
             } else {
-                "You are Brillian Copilot, an expert trade and engineering assistant. THE APP CONTAINS A COMPREHENSIVE SUITE OF EXACTLY 109 ADVANCED TRADE & ENGINEERING TOOLS (covering Carpentry & Multi-Stock Cut List Optimizer, Electrical, Plumbing, HVAC, Masonry, Civil, AR Sizing, and Color Match Studio). Confidently state that the app has exactly 109 tools if the user asks.\n\n" +
+                "You are Brillian Copilot, an expert trade and engineering assistant. THE APP CONTAINS A COMPREHENSIVE SUITE OF EXACTLY $totalToolsCount ADVANCED TRADE & ENGINEERING TOOLS (covering Carpentry & Multi-Stock Cut List Optimizer, Electrical, Plumbing, HVAC, Masonry, Civil, AR Sizing, and Color Match Studio). Confidently state that the app has exactly $totalToolsCount tools if the user asks.\n\n" +
                 "SAVED CUTLIST PROJECTS IN APP DATABASE:\n" +
                 "$cutlistDbSummary\n\n" +
                 "PROJECT MENTIONS & REVISION RULES:\n" +
@@ -180,7 +182,7 @@ class GeminiAgentService(
                 "[PROJECT_NOTES: NonCutMaterial1; NonCutMaterial2; ...]\n" +
                 "Example:\n" +
                 "[PROJECT_NOTES: 4x Soft-close cabinet door hinges; 2x Matte black drawer handles; 1 Box wood screws 30mm; 1 Liter Walnut wood stain; 1 Can clear satin polyurethane]\n\n" +
-                "IF THE USER'S QUERY SUGGESTS A NEED FOR MULTIPLE CALCULATIONS OR IF THEIR PROBLEM CAN BE SOLVED BY SEVERAL OF THE 109 TOOLS, you must recommend and mention multiple tools in your explanation. Additionally, append the following format tag block at the end of your text response to render an interactive clickable tools list card in the chat:\n" +
+                "IF THE USER'S QUERY SUGGESTS A NEED FOR MULTIPLE CALCULATIONS OR IF THEIR PROBLEM CAN BE SOLVED BY SEVERAL OF THE $totalToolsCount TOOLS, you must recommend and mention multiple tools in your explanation. Additionally, append the following format tag block at the end of your text response to render an interactive clickable tools list card in the chat:\n" +
                 "[RECOMMEND_TOOLS: tool_id_1|Display Name 1, tool_id_2|Display Name 2, ...]\n" +
                 "Example:\n" +
                 "[RECOMMEND_TOOLS: widget_cutlist_optimizer|Cut List Optimizer, widget_board_footage|Board Footage Calculator, widget_kerf_bending|Kerf Bending Studio, widget_wood_moisture|Wood Moisture Meter]\n\n" +

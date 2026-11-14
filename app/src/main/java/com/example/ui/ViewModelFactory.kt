@@ -9,7 +9,6 @@ import com.example.data.repository.DashboardRepository
 import com.example.data.repository.MaterialRepository
 import com.example.data.repository.NoteRepository
 import com.example.data.repository.SettingsRepository
-import com.example.data.repository.SyncRepository
 import com.example.data.repository.TaskRepository
 import com.example.data.repository.ToolLogRepository
 import com.example.ui.screens.civil.AggregateSieveViewModel
@@ -79,7 +78,6 @@ import com.example.ui.screens.sensors.UsbProCameraViewModel
 import com.example.ui.screens.sensors.QrCodeScannerViewModel
 import com.example.ui.screens.sensors.VibrationAnalyzerViewModel
 import com.example.ui.screens.settings.SettingsViewModel
-import com.example.ui.screens.sync.SyncQueueViewModel
 import com.example.ui.screens.library.LibraryViewModel
 import com.example.ui.screens.tools.ColorDevToolsViewModel
 import com.example.ui.screens.tools.FocusTimerViewModel
@@ -108,10 +106,9 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
 
     private val db by lazy { AppDatabase.getInstance(context) }
     private val dashboardRepository by lazy { DashboardRepository(db.dashboardDao()) }
-    private val taskRepository by lazy { TaskRepository(db.quickTaskDao(), db.syncQueueDao()) }
-    private val noteRepository by lazy { NoteRepository(db.quickNoteDao(), db.syncQueueDao()) }
+    private val taskRepository by lazy { TaskRepository(db.quickTaskDao()) }
+    private val noteRepository by lazy { NoteRepository(db.quickNoteDao()) }
     private val toolLogRepository by lazy { ToolLogRepository(db.toolLogDao(), noteRepository) }
-    private val syncRepository by lazy { SyncRepository(db.syncQueueDao(), db.quickTaskDao(), db.quickNoteDao()) }
     private val materialRepository by lazy { MaterialRepository(db.materialDao()) }
     val settingsRepository by lazy { SettingsRepository(context) }
     private val workTrackingRepository by lazy { WorkTrackingRepository(context) }
@@ -142,7 +139,7 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
                 ArAreaCalculatorViewModel(app) as T
             }
             modelClass.isAssignableFrom(DashboardViewModel::class.java) -> {
-                DashboardViewModel(dashboardRepository, taskRepository, noteRepository, syncRepository, toolLogRepository, settingsRepository) as T
+                DashboardViewModel(dashboardRepository, taskRepository, noteRepository, toolLogRepository, settingsRepository) as T
             }
             modelClass.isAssignableFrom(CustomizeDashboardViewModel::class.java) -> {
                 CustomizeDashboardViewModel(dashboardRepository) as T
@@ -344,9 +341,6 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
             }
             modelClass.isAssignableFrom(TaskChecklistViewModel::class.java) -> {
                 TaskChecklistViewModel(taskRepository) as T
-            }
-            modelClass.isAssignableFrom(SyncQueueViewModel::class.java) -> {
-                SyncQueueViewModel(syncRepository) as T
             }
             modelClass.isAssignableFrom(JobsiteIrRemoteViewModel::class.java) -> {
                 JobsiteIrRemoteViewModel(app, toolLogRepository) as T

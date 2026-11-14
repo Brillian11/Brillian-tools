@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.screens.dashboard.DashboardViewModel
 import com.example.ui.utils.AppLocalization
+import com.example.domain.sensor.DeviceSensorDetector
+import com.example.ui.screens.sensors.SensorDetailCard
+import com.example.ui.screens.sensors.SensorAuditSummaryCard
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -36,13 +39,15 @@ fun WelcomeScreen(
     modifier: Modifier = Modifier
 ) {
     var currentPage by remember { mutableStateOf(1) }
-    val totalPages = 5
+    val totalPages = 6
 
     // State for Settings & Profile Picker
     var isTermsAccepted by remember { mutableStateOf(false) }
     var selectedUnits by remember { mutableStateOf("Imperial") }
     var selectedPrecision by remember { mutableStateOf("1/16\"") }
     var selectedProfile by remember { mutableStateOf("General") }
+    var isCompleting by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val userSettings by viewModel.userSettings.collectAsStateWithLifecycle()
     val isIndonesian = userSettings.languageCode == "id"
@@ -106,12 +111,16 @@ fun WelcomeScreen(
                                     currentPage++
                                 }
                             } else {
-                                // Final Page: save and complete
+                                // Final Page: save and complete with animated loading feedback
+                                isCompleting = true
                                 viewModel.completeOnboarding(selectedProfile, selectedUnits)
-                                onFinished()
+                                coroutineScope.launch {
+                                    kotlinx.coroutines.delay(1200)
+                                    onFinished()
+                                }
                             }
                         },
-                        enabled = currentPage != 2 || isTermsAccepted,
+                        enabled = (currentPage != 2 || isTermsAccepted) && !isCompleting,
                         modifier = Modifier
                             .testTag("welcome_next_button")
                             .minimumInteractiveComponentSize()
@@ -123,6 +132,55 @@ fun WelcomeScreen(
         },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
+        if (isCompleting) {
+            AlertDialog(
+                onDismissRequest = {},
+                confirmButton = {},
+                shape = RoundedCornerShape(24.dp),
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Engineering,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Text(
+                            text = "Configuring $selectedProfile Workspace",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Pinning relevant trade tools, initializing offline calculation engines, and applying unit standards...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -158,17 +216,20 @@ fun WelcomeScreen(
                             onTermsAcceptedChange = { isTermsAccepted = it }
                         )
                         3 -> PermissionsPage(isIndonesian)
-                        4 -> SettingsPage(
+                        4 -> SensorsDetectorWizardPage(isIndonesian)
+                        5 -> SettingsPage(
                             isIndonesian = isIndonesian,
                             selectedUnits = selectedUnits,
                             onUnitsChange = { selectedUnits = it },
                             selectedPrecision = selectedPrecision,
                             onPrecisionChange = { selectedPrecision = it }
                         )
-                        5 -> ProfilePage(
+                        6 -> ProfilePage(
                             isIndonesian = isIndonesian,
                             selectedProfile = selectedProfile,
-                            onProfileChange = { selectedProfile = it }
+                            onProfileChange = { selectedProfile = it },
+                            selectedEngine = userSettings.aiModel,
+                            onEngineChange = { viewModel.updateAiModel(it) }
                         )
                     }
                 }
@@ -580,7 +641,9 @@ fun SettingsPage(
 fun ProfilePage(
     isIndonesian: Boolean,
     selectedProfile: String,
-    onProfileChange: (String) -> Unit
+    onProfileChange: (String) -> Unit,
+    selectedEngine: String,
+    onEngineChange: (String) -> Unit
 ) {
     Icon(
         imageVector = Icons.Default.AccountCircle,
@@ -616,13 +679,6 @@ fun ProfilePage(
         ProfileOption("Metalworker", Icons.Default.LocalFireDepartment, AppLocalization.t("profile_metalworker_title", isIndonesian), AppLocalization.t("profile_metalworker_sub", isIndonesian), AppLocalization.t("profile_metalworker_desc", isIndonesian)),
         ProfileOption("General", Icons.Default.Build, AppLocalization.t("profile_general_title", isIndonesian), AppLocalization.t("profile_general_sub", isIndonesian), AppLocalization.t("profile_general_desc", isIndonesian))
     )
-
-    val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("brillian_ai_prefs", Context.MODE_PRIVATE) }
-    var downloadedModelId by remember { mutableStateOf(prefs.getString("downloaded_model", "smollm2_360m")) }
-    var isDownloading by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableStateOf(0f) }
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -708,7 +764,7 @@ fun ProfilePage(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.Engineering,
+                        imageVector = Icons.Default.Bolt,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
@@ -726,92 +782,105 @@ fun ProfilePage(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                if (downloadedModelId.isNullOrEmpty()) {
-                    Text(
-                        text = AppLocalization.t("welcome_ai_no_weights", isIndonesian),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                // Option 1: Built-in Offline Engine (Recommended)
+                val isOfflineSelected = selectedEngine == "built_in_engine"
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isOfflineSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isOfflineSelected) null else CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onEngineChange("built_in_engine") }
+                        .testTag("welcome_option_offline_engine")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        RadioButton(
+                            selected = isOfflineSelected,
+                            onClick = { onEngineChange("built_in_engine") }
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = AppLocalization.t("welcome_ai_offline_title", isIndonesian),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = if (isOfflineSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = AppLocalization.t("welcome_ai_offline_desc", isIndonesian),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isOfflineSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
 
-                    if (isDownloading) {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            LinearProgressIndicator(
-                                progress = { downloadProgress },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.primary
+                // Option 2: Cloud AI Assistant
+                val isCloudSelected = selectedEngine != "built_in_engine"
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isCloudSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (isCloudSelected) null else CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onEngineChange("gemini-2.0-flash") }
+                        .testTag("welcome_option_cloud_ai")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        RadioButton(
+                            selected = isCloudSelected,
+                            onClick = { onEngineChange("gemini-2.0-flash") }
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = AppLocalization.t("welcome_ai_cloud_title", isIndonesian),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = if (isCloudSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${AppLocalization.t("welcome_ai_downloading", isIndonesian)} ${(downloadProgress * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+                                text = AppLocalization.t("welcome_ai_cloud_desc", isIndonesian),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isCloudSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    } else {
-                        Button(
-                            onClick = {
-                                isDownloading = true
-                                downloadProgress = 0f
-                                coroutineScope.launch {
-                                    for (i in 1..10) {
-                                        kotlinx.coroutines.delay(120)
-                                        downloadProgress = i / 10f
-                                    }
-                                    prefs.edit().putString("downloaded_model", "qwen25_15b").apply()
-                                    downloadedModelId = "qwen25_15b"
-                                    isDownloading = false
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().testTag("welcome_download_model_button"),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(AppLocalization.t("welcome_ai_btn_download", isIndonesian))
-                        }
                     }
-                } else {
-                    val modelName = when (downloadedModelId) {
-                        "smollm2_360m" -> "SmolLM2 360M Instruct"
-                        "qwen25_15b" -> "Qwen2.5 1.5B Instruct"
-                        else -> "Gemma-2 2B Instruct"
-                    }
+                }
 
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                // Status Badge
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "$modelName ${AppLocalization.t("welcome_ai_ready", isIndonesian)}",
-                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            prefs.edit().putString("downloaded_model", "").apply()
-                            downloadedModelId = ""
-                        },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.fillMaxWidth().testTag("welcome_delete_model_button")
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(AppLocalization.t("welcome_ai_btn_delete", isIndonesian))
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = if (isOfflineSelected) AppLocalization.t("welcome_ai_ready", isIndonesian)
+                            else "Cloud AI selected (API key configurable in Settings)",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
@@ -826,3 +895,62 @@ data class ProfileOption(
     val subtitle: String,
     val desc: String
 )
+
+@Composable
+fun SensorsDetectorWizardPage(isIndonesian: Boolean) {
+    val context = LocalContext.current
+    val detector = remember { DeviceSensorDetector.getInstance(context) }
+    val report by detector.auditReport.collectAsState()
+
+    Icon(
+        imageVector = Icons.Default.Sensors,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .size(72.dp)
+            .padding(top = 16.dp)
+    )
+
+    Text(
+        text = if (isIndonesian) "Detektor Sensor Perangkat" else "Device Sensors Detector",
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.primary
+    )
+
+    Text(
+        text = if (isIndonesian)
+            "Pemeriksaan sensor otomatis mendeteksi ketersediaan perangkat keras di ponsel ini. Alat yang membutuhkan sensor yang tidak tersedia akan ditandai tidak dapat digunakan secara otomatis."
+        else
+            "Automatic diagnostic scan to audit hardware measurement sensors on this device. Tools requiring missing sensors will be gracefully made unavailable.",
+        style = MaterialTheme.typography.bodyMedium,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    SensorAuditSummaryCard(
+        report = report,
+        onRescan = { detector.refresh() }
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Text(
+        text = if (isIndonesian) "HASIL DIAGNOSTIK SENSOR" else "HARDWARE SENSORS DETECTED",
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.1.sp
+        ),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    report.sensors.forEach { spec ->
+        SensorDetailCard(spec = spec)
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+}

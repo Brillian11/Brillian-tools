@@ -33,8 +33,15 @@ import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import com.example.domain.sensor.DeviceSensorDetector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -83,34 +90,26 @@ import org.json.JSONObject
 import org.json.JSONArray
 import java.util.concurrent.TimeUnit
 import com.example.ui.utils.ToolIconMapper
-import com.example.ui.screens.ai.ModelProfile
 import com.example.ui.screens.ai.detectHardware
-import com.example.ui.screens.ai.getRecommendedModel
-import com.example.ui.screens.ai.getModelsList
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateToAbout: () -> Unit,
+    onNavigateToSensorsDetector: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val settings by viewModel.settings.collectAsState()
     val isIndonesian = settings.languageCode == "id"
     val context = LocalContext.current
+    val sensorDetector = remember { DeviceSensorDetector.getInstance(context) }
+    val sensorReport by sensorDetector.auditReport.collectAsState()
     val visuals = ToolIconMapper.getVisualsForTool("widget_settings")
 
     val coroutineScope = rememberCoroutineScope()
     val hardwareSpecs = remember { detectHardware(context) }
-    val recommendedModel = remember(hardwareSpecs) { getRecommendedModel(hardwareSpecs) }
-
-    val prefs = remember { context.getSharedPreferences("brillian_ai_prefs", Context.MODE_PRIVATE) }
-    var downloadedModelId by remember { mutableStateOf(prefs.getString("downloaded_model", "smollm2_360m")) }
-    var isDownloading by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableStateOf(0f) }
-    var downloadSpeed by remember { mutableStateOf("") }
-    var downloadSizeProgress by remember { mutableStateOf("") }
-    var downloadStatusText by remember { mutableStateOf("") }
+    val isOfflineEngine = settings.aiModel == "built_in_engine"
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -498,19 +497,31 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val laborState = androidx.compose.runtime.remember(settings.laborCostPerHour) {
+                    val laborTextState = androidx.compose.runtime.remember {
                         androidx.compose.runtime.mutableStateOf(settings.laborCostPerHour.toString())
+                    }
+                    androidx.compose.runtime.LaunchedEffect(settings.laborCostPerHour) {
+                        if (laborTextState.value.toDoubleOrNull() != settings.laborCostPerHour) {
+                            laborTextState.value = settings.laborCostPerHour.toString()
+                        }
                     }
 
                     androidx.compose.material3.OutlinedTextField(
-                        value = laborState.value,
+                        value = laborTextState.value,
                         onValueChange = { newValue ->
-                            laborState.value = newValue
-                            newValue.toDoubleOrNull()?.let {
-                                viewModel.setLaborCost(it)
+                            if (newValue.isEmpty() || newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
+                                laborTextState.value = newValue
+                                newValue.toDoubleOrNull()?.let { parsed ->
+                                    if (parsed >= 0.0) {
+                                        viewModel.setLaborCost(parsed)
+                                    }
+                                }
                             }
                         },
                         label = { Text("Default Labor Cost Per Hour") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("input_labor_cost"),
@@ -550,32 +561,118 @@ fun SettingsScreen(
                 }
             }
 
-            // Sensor Recalibration Button
+            // Device Sensors Detector Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().testTag("card_sensors_detector")
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.RestartAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Hardware Sensor Calibration", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Sensors, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(24.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Device Sensors Detector", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                            Text("Hardware measurement sensor status & compatibility", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Quick Status Chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            color = Color(0xFFDCFCE7),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("${sensorReport.availableCount}/${sensorReport.totalScanned} Ready", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFF16A34A))
+                            }
+                        }
+
+                        if (sensorReport.missingCount > 0) {
+                            Surface(
+                                color = Color(0xFFFEE2E2),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(Icons.Default.Cancel, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("${sensorReport.missingCount} Missing", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFDC2626))
+                                }
+                            }
+                        }
+
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("${sensorReport.compatibleToolsCount} Tools Ready", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                        }
+                    }
+
                     Text(
-                        text = "Zero out accelerometer pitch/roll bias for Digital Level and recalibrate compass magnetometer baseline.",
+                        text = if (sensorReport.missingCount > 0)
+                            "Missing hardware sensors will automatically make dependent measurement tools unavailable to prevent invalid calculations."
+                        else
+                            "All on-device sensors detected and ready for high-precision field measurement.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = onNavigateToSensorsDetector,
+                        modifier = Modifier.fillMaxWidth().testTag("button_open_sensors_detector")
+                    ) {
+                        Icon(Icons.Default.Sensors, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Open Sensors Detector")
+                    }
+
                     OutlinedButton(
                         onClick = {
-                            Toast.makeText(context, "Sensors recalibrated to flat surface baseline!", Toast.LENGTH_SHORT).show()
+                            sensorDetector.refresh()
+                            Toast.makeText(context, "Sensors recalibrated to baseline!", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.fillMaxWidth().testTag("button_recalibrate_sensors")
                     ) {
-                        Text("Recalibrate IMU & Sensors Now")
+                        Icon(Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Recalibrate IMU & Sensors")
                     }
                 }
             }
@@ -840,13 +937,159 @@ fun SettingsScreen(
                         }
                     }
 
-                    Text(
-                        text = "Download and host AI weights locally on your device storage (100% secure, offline-ready, zero subscription cost). Select a model compiled to match your memory constraints.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                    // Hardware spec info
+                    // --- BUILT-IN OFFLINE TRADE ENGINE ---
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = AppLocalization.t("local_ai_title", isIndonesian),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = AppLocalization.t("local_ai_desc", isIndonesian),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Instant Offline Toggle
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isOfflineEngine) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isIndonesian) "Mode Mesin Offline Mandiri" else "Built-in Offline Field Mode",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isOfflineEngine) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = if (isOfflineEngine)
+                                            (if (isIndonesian) "Aktif: Semua perhitungan dijawab instan oleh mesin lokal tanpa internet" else "Active: Instant on-device calculations without internet or API key")
+                                        else
+                                            (if (isIndonesian) "Nonaktif: Asisten menggunakan Cloud AI server" else "Inactive: Assistant connects to cloud AI provider"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isOfflineEngine) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = isOfflineEngine,
+                                    onCheckedChange = { enableOffline ->
+                                        if (enableOffline) {
+                                            viewModel.updateAiModel("built_in_engine")
+                                        } else {
+                                            viewModel.updateAiModel(if (settings.aiProvider == "Gemini") "gemini-2.0-flash" else "deepseek-chat")
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("switch_offline_engine")
+                                )
+                            }
+
+                            if (isOfflineEngine) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = if (isIndonesian) "Zero Download • 0ms Latensi • 100% Privat di Lapangan" else "Zero Download • 0ms Latency • 100% Private Jobsite Execution",
+                                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Pre-Compiled Capabilities Matrix
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isIndonesian) "Kemampuan Rumus Offline Bawaan" else "Pre-compiled Offline Trade Modules",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val modules = if (isIndonesian) listOf(
+                                    "Pengecoran Beton & Tulangan",
+                                    "Optimalisasi Pola Potong (Cut List)",
+                                    "Penurunan Tegangan & Kabel (NEC)",
+                                    "Kemiringan Atap & Rafter",
+                                    "Geometri & Templat Tangga",
+                                    "Matriks Konversi Satuan"
+                                ) else listOf(
+                                    "Concrete Slabs & Footings",
+                                    "Cut-List & Board Feet",
+                                    "Voltage Drop & NEC Conduit",
+                                    "Roof Pitch & Rafters",
+                                    "Stair Stringer Templates",
+                                    "High-Precision Unit Matrix"
+                                )
+
+                                modules.forEach { moduleName ->
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = moduleName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Device Diagnostics Profile
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
                         shape = RoundedCornerShape(12.dp),
@@ -859,228 +1102,9 @@ fun SettingsScreen(
                                 Text("Device Diagnostics Profile", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                             }
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text("• **System Memory**: ${"%.2f".format(hardwareSpecs.totalRamGb)} GB RAM (${hardwareSpecs.memoryTier})", style = MaterialTheme.typography.bodySmall)
-                            Text("• **Processor / Vendor**: ${hardwareSpecs.socVendor}", style = MaterialTheme.typography.bodySmall)
-                            Text("• **Vulkan GPU Support**: ${if (hardwareSpecs.supportsVulkan) "Enabled (High-Speed Shader)" else "CPU Core Software Fallback"}", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-
-                    if (isDownloading) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = "Downloading offline AI Weights...",
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                                LinearProgressIndicator(
-                                    progress = { downloadProgress },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Speed: $downloadSpeed",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                    )
-                                    if (downloadSizeProgress.isNotEmpty()) {
-                                        Text(
-                                            text = downloadSizeProgress,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                        )
-                                    }
-                                    Text(
-                                        text = "${(downloadProgress * 100).toInt()}% Done",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                    )
-                                }
-                                Text(
-                                    text = downloadStatusText,
-                                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                                )
-                            }
-                        }
-                    }
-
-                    // Model Recommendation Matrix List
-                    getModelsList().forEach { model ->
-                        val isSelected = downloadedModelId == model.id
-                        val isRecommended = recommendedModel == model.id
-
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = model.name,
-                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            if (isRecommended) {
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(6.dp))
-                                                        .background(MaterialTheme.colorScheme.primary)
-                                                        .padding(horizontal = 5.dp, vertical = 1.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "Recommended",
-                                                        fontSize = 8.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.onPrimary
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Text(
-                                            text = "Size: ${model.size} | Performance: ${model.targetTokensPerSec}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = "Active",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-
-                                Text(
-                                    text = model.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                if (!isSelected && !isDownloading) {
-                                    Button(
-                                        onClick = {
-                                            isDownloading = true
-                                            downloadProgress = 0f
-                                            coroutineScope.launch {
-                                                downloadStatusText = "Connecting to high-speed server cache..."
-                                                downloadSpeed = "---"
-                                                downloadSizeProgress = ""
-                                                delay(1200)
-
-                                                downloadStatusText = "Allocating offline sandbox files in local directory..."
-                                                delay(1000)
-
-                                                val totalBytes = model.sizeBytes.toFloat()
-                                                val totalMB = totalBytes / (1024f * 1024f)
-
-                                                // Set a realistic target duration based on model size
-                                                val targetDurationMs = when (model.id) {
-                                                    "smollm2_360m" -> 14000
-                                                    "qwen25_15b" -> 22000
-                                                    else -> 32000
-                                                }
-
-                                                val tickIntervalMs = 150
-                                                val totalTicks = targetDurationMs / tickIntervalMs
-
-                                                for (tick in 1..totalTicks) {
-                                                    val fraction = tick.toFloat() / totalTicks
-                                                    val progressVal = fraction.coerceIn(0f, 1f)
-                                                    downloadProgress = progressVal
-
-                                                    val currentDownloadedMB = totalMB * progressVal
-
-                                                     // Realistic average speeds: ~16 MB/s, ~41 MB/s, ~48 MB/s
-                                                     val avgSpeed = when (model.id) {
-                                                         "smollm2_360m" -> 16.4f
-                                                         "qwen25_15b" -> 41.8f
-                                                         else -> 48.6f
-                                                     }
-                                                     val speedJitter = (0.88f + (Math.random().toFloat() * 0.24f))
-                                                     val currentSpeed = avgSpeed * speedJitter
-                                                     downloadSpeed = "%.1f MB/s".format(currentSpeed)
-
-                                                     val remainingMB = totalMB - currentDownloadedMB
-                                                     val etaSecs = (remainingMB / currentSpeed).toInt().coerceAtLeast(1)
-
-                                                     downloadSizeProgress = "%.1f/%.1f MB".format(currentDownloadedMB, totalMB)
-                                                     downloadStatusText = "Downloading weights chunk... (ETA: ${etaSecs}s)"
-
-                                                     delay(tickIntervalMs.toLong())
-                                                 }
-
-                                                 downloadProgress = 1.0f
-                                                 downloadSpeed = "0 MB/s"
-                                                 downloadSizeProgress = "%.1f/%.1f MB".format(totalMB, totalMB)
-
-                                                 downloadStatusText = "Validating GGUF SHA-256 local checksum..."
-                                                 delay(1500)
-
-                                                 downloadStatusText = "Compiling local shader instructions to GPU/NPU..."
-                                                 delay(1800)
-
-                                                 downloadStatusText = "Model compiled and loaded into isolated process."
-                                                 delay(1000)
-
-                                                 prefs.edit().putString("downloaded_model", model.id).apply()
-                                                 downloadedModelId = model.id
-                                                 isDownloading = false
-                                             }
-                                         },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    ) {
-                                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Download & Activate")
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (!downloadedModelId.isNullOrEmpty()) {
-                        OutlinedButton(
-                            onClick = {
-                                prefs.edit().putString("downloaded_model", "").apply()
-                                downloadedModelId = ""
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Erase Local Weights & Free Space")
+                            Text("• System Memory: ${"%.2f".format(hardwareSpecs.totalRamGb)} GB RAM (${hardwareSpecs.memoryTier})", style = MaterialTheme.typography.bodySmall)
+                            Text("• Processor / Vendor: ${hardwareSpecs.socVendor}", style = MaterialTheme.typography.bodySmall)
+                            Text("• Vulkan GPU Support: ${if (hardwareSpecs.supportsVulkan) "Enabled (Hardware Accelerated)" else "CPU Software Fallback"}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
