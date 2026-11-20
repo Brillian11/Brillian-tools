@@ -1,13 +1,9 @@
-# Release v1.2.0 - AI Agent-Driven Fieldwork & Comprehensive Tool Suite
+# Release v1.3.0 - Kerf Curve Lengths, Enhanced Digital Level & Auto-Build CI
 
 ### 🚀 Release Highlights
-- **AI Agent-Driven Fieldwork Companion**: Positioned local AI copilot tools front-and-center for instant offline trade calculations and conversational assistance on the jobsite.
-- **Standout AI Features**:
-  - **AI Cutting List Optimizer**: Intelligent 1D & 2D stock nesting engine to minimize scrap waste across sheet goods and dimensional lumber.
-  - **AI Paint & Coating Analyzer**: Advanced coating calculation agent for volume, dry film thickness (DFT), and substrate porosity adjustments.
-- **Rapid Development Safety Notice**: Added prominent disclaimers advising users that tools are currently under rapid development, may be non-accurate, and require professional verification before critical on-site execution.
-- **Developer Profile Refinement**: Updated bio to reflect current systems and UX engineering without decade-specific metrics.
-- **Complete 111+ Feature Catalog**: Fully documented all 111 professional trade tools across Woodworking, Electrical, Plumbing, Safety, Civil Engineering, 21+ Sensor telemetry tools, Metalworks, Mechanical/HVAC, Painting, and Utility modules in the repository.
-- **App Logo & Visual Polish**: Integrated custom adaptive app logo (`logo.webp`) and upgraded the Library module with local database initialization and Google Play Store external app viewer shortcuts.
+- **Kerf Bending Wood Curve Lengths**: Added Inside Curve and Outside Curve total wood length readouts in both Single Curve Bend and Multi-Section Kerf modes, plus per-section curve breakdowns.
+- **Stabilized Digital Level Guide & Auto-Rotation**: Replaced multi-axis tube rotation in `StraightLineLevelGauge` with a fixed horizontal camera-style level guide and enabled automatic sensor rotation (`SCREEN_ORIENTATION_FULL_SENSOR`) in `DigitalLevelScreen`.
+- **Streamlined Offline Architecture**: Removed the redundant Offline Sync Center module (`SyncQueueScreen`, sync entities/DAOs, and top bar badge) in favor of clean local persistence.
+- **Automated GitHub Actions CI/CD**: Configured automatic semantic versioning (`version.properties`), automatic `CHANGELOG.md` / `RELEASE.md` updates, APK builds, and GitHub Releases on code pushes.
 
 ---

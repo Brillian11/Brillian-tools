@@ -59,7 +59,9 @@ data class MultiSectionKerfResult(
     val totalKerfZoneLengthMm: Double,
     val remainingFlatLengthMm: Double,
     val isFeasible: Boolean,
-    val warningMessage: String? = null
+    val warningMessage: String? = null,
+    val totalInnerCurveLengthMm: Double = 0.0,
+    val totalOuterCurveLengthMm: Double = 0.0
 )
 
 object KerfBendingEngine {
@@ -128,7 +130,9 @@ object KerfBendingEngine {
                 totalKerfZoneLengthMm = 0.0,
                 remainingFlatLengthMm = boardLen,
                 isFeasible = false,
-                warningMessage = "Please specify valid board length and at least 1 bend section."
+                warningMessage = "Please specify valid board length and at least 1 bend section.",
+                totalInnerCurveLengthMm = 0.0,
+                totalOuterCurveLengthMm = 0.0
             )
         }
 
@@ -136,6 +140,7 @@ object KerfBendingEngine {
         val sectionCalculations = mutableListOf<SectionCalculationResult>()
         var totalCuts = 0
         var totalKerfSpan = 0.0
+        var totalInnerSpan = 0.0
 
         for (sec in input.sections) {
             val r = sec.targetRadiusMm
@@ -166,6 +171,7 @@ object KerfBendingEngine {
 
             totalCuts += cutsCount
             totalKerfSpan += kerfZoneLength
+            totalInnerSpan += lInner
             currentPos = endPos + 80.0 // 80mm un-kerfed flat spacer between bend sections
         }
 
@@ -186,7 +192,9 @@ object KerfBendingEngine {
             totalKerfZoneLengthMm = totalKerfSpan,
             remainingFlatLengthMm = remainingFlat,
             isFeasible = fitsOnBoard && warning == null,
-            warningMessage = warning
+            warningMessage = warning,
+            totalInnerCurveLengthMm = totalInnerSpan,
+            totalOuterCurveLengthMm = totalKerfSpan
         )
     }
 }

@@ -89,7 +89,7 @@ fun AboutScreen(
                 )
 
                 Text(
-                    text = "Version 1.5.0 (Build 42)\n© 2026 Brillian Systems. All rights reserved.",
+                    text = "Version ${com.example.BuildConfig.VERSION_NAME} (Build ${com.example.BuildConfig.VERSION_CODE})\n© 2026 Brillian Systems. All rights reserved.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center

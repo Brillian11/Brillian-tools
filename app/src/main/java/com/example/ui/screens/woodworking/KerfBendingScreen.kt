@@ -313,6 +313,26 @@ fun KerfBendingScreen(
                             )
                         }
 
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            ResultBadge(
+                                title = "WOOD LENGTH (INSIDE)",
+                                value = String.format("%.1f", multiResult.totalInnerCurveLengthMm),
+                                unit = "mm inside curve",
+                                color = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.weight(1f).testTag("badge_multi_inside_curve")
+                            )
+                            ResultBadge(
+                                title = "WOOD LENGTH (OUTSIDE)",
+                                value = String.format("%.1f", multiResult.totalOuterCurveLengthMm),
+                                unit = "mm outside curve",
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.weight(1f).testTag("badge_multi_outside_curve")
+                            )
+                        }
+
                         multiResult.sectionResults.forEach { secRes ->
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -325,7 +345,12 @@ fun KerfBendingScreen(
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                     Text(
-                                        text = "Position: ${String.format("%.0f", secRes.startPositionMm)}mm to ${String.format("%.0f", secRes.endPositionMm)}mm along 1m board",
+                                        text = "Inside Curve: ${String.format("%.1f", secRes.innerArcLengthMm)} mm • Outside Curve: ${String.format("%.1f", secRes.outerArcLengthMm)} mm",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "Position: ${String.format("%.0f", secRes.startPositionMm)}mm to ${String.format("%.0f", secRes.endPositionMm)}mm along board",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -450,6 +475,26 @@ fun KerfBendingScreen(
                                 unit = "mm delta",
                                 color = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            ResultBadge(
+                                title = "WOOD LENGTH (INSIDE)",
+                                value = String.format("%.1f", result.innerArcLengthMm),
+                                unit = "mm inside curve",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f).testTag("badge_inside_curve_length")
+                            )
+                            ResultBadge(
+                                title = "WOOD LENGTH (OUTSIDE)",
+                                value = String.format("%.1f", result.outerArcLengthMm),
+                                unit = "mm outside curve",
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.weight(1f).testTag("badge_outside_curve_length")
                             )
                         }
                     }

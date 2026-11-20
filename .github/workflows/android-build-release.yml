@@ -1,0 +1,281 @@
+name: Android CI Build & Auto Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type (auto detects from commit messages)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate version & generate changelog
+        id: version
+        env:
+          BUMP_TYPE: ${{ github.event.inputs.bump_type || 'auto' }}
+        run: |
+          python3 - <<'PY'
+          import datetime
+          import os
+          import re
+          import subprocess
+
+          def run(cmd):
+              return subprocess.check_output(cmd, shell=True, text=True).strip()
+
+          # 1. Load current version.properties
+          props = {"VERSION_MAJOR": 1, "VERSION_MINOR": 3, "VERSION_PATCH": 0, "VERSION_CODE": 4}
+          if os.path.exists("version.properties"):
+              with open("version.properties", "r", encoding="utf-8") as f:
+                  for line in f:
+                      line = line.strip()
+                      if "=" in line and not line.startswith("#"):
+                          k, v = line.split("=", 1)
+                          if k in props:
+                              props[k] = int(v.strip())
+
+          major = props["VERSION_MAJOR"]
+          minor = props["VERSION_MINOR"]
+          patch = props["VERSION_PATCH"]
+          code = props["VERSION_CODE"]
+
+          # 2. Check git tags
+          tags_out = run("git tag -l 'v*' --sort=-v:refname")
+          tags = [t.strip() for t in tags_out.splitlines() if t.strip()]
+          last_tag = tags[0] if tags else ""
+
+          current_tag = f"v{major}.{minor}.{patch}"
+          bump_type = os.environ.get("BUMP_TYPE", "auto")
+
+          # Collect commit messages since last tag
+          log_range = f"{last_tag}..HEAD" if last_tag else "HEAD"
+          raw_commits = run(f"git log {log_range} --pretty=format:'%s|||%h' || true")
+          commits = []
+          for line in raw_commits.splitlines():
+              if not line.strip() or "[skip ci]" in line:
+                  continue
+              if "|||" in line:
+                  msg, sha = line.split("|||", 1)
+                  commits.append((msg.strip(), sha.strip()))
+
+          # 3. Determine whether to bump or use un-released version.properties
+          if current_tag in tags or bump_type != "auto":
+              detected_bump = "patch"
+              if bump_type in ("major", "minor", "patch"):
+                  detected_bump = bump_type
+              else:
+                  for msg, _ in commits:
+                      if "BREAKING CHANGE" in msg or re.match(r"^[a-z]+(\([^)]+\))?!:", msg):
+                          detected_bump = "major"
+                          break
+                      if re.match(r"^feat(\([^)]+\))?:", msg):
+                          detected_bump = "minor"
+
+              if detected_bump == "major":
+                  major += 1
+                  minor = 0
+                  patch = 0
+              elif detected_bump == "minor":
+                  minor += 1
+                  patch = 0
+              else:
+                  patch += 1
+
+              code += 1
+
+          version_name = f"{major}.{minor}.{patch}"
+          tag_name = f"v{version_name}"
+          today = datetime.date.today().isoformat()
+
+          with open("version.properties", "w", encoding="utf-8") as f:
+              f.write(f"VERSION_MAJOR={major}\n")
+              f.write(f"VERSION_MINOR={minor}\n")
+              f.write(f"VERSION_PATCH={patch}\n")
+              f.write(f"VERSION_CODE={code}\n")
+
+          # 4. Categorize commits for changelog
+          feats, fixes, others = [], [], []
+          for msg, sha in commits:
+              entry = f"- {msg} (`{sha}`)"
+              if re.match(r"^feat(\([^)]+\))?!?:", msg):
+                  feats.append(entry)
+              elif re.match(r"^fix(\([^)]+\))?!?:", msg):
+                  fixes.append(entry)
+              else:
+                  others.append(entry)
+
+          notes_lines = []
+          if feats:
+              notes_lines.append("### 🚀 Features & Enhancements")
+              notes_lines.extend(feats)
+              notes_lines.append("")
+          if fixes:
+              notes_lines.append("### 🐛 Bug Fixes")
+              notes_lines.extend(fixes)
+              notes_lines.append("")
+          if others:
+              notes_lines.append("### 🔧 Refactoring & Maintenance")
+              notes_lines.extend(others)
+              notes_lines.append("")
+          if not notes_lines:
+              notes_lines.append(f"- Automated APK build and release for {tag_name} (build {code}).")
+              notes_lines.append("")
+
+          release_notes_body = "\n".join(notes_lines).strip()
+
+          # 5. Update CHANGELOG.md if this version section doesn't exist yet
+          header = "# Changelog\n\nAll notable changes to **Brillian Tools** will be documented in this file.\n\n"
+          existing_changelog = ""
+          if os.path.exists("CHANGELOG.md"):
+              with open("CHANGELOG.md", "r", encoding="utf-8") as f:
+                  existing_changelog = f.read()
+
+          new_section = f"## [{tag_name}] - {today}\n\n{release_notes_body}\n\n---\n\n"
+          if f"## [{tag_name}]" not in existing_changelog:
+              if existing_changelog.startswith("# Changelog"):
+                  parts = existing_changelog.split("\n## [", 1)
+                  if len(parts) == 2:
+                      updated_changelog = f"{parts[0]}\n{new_section}## [{parts[1]}"
+                  else:
+                      updated_changelog = f"{header}{new_section}"
+              else:
+                  updated_changelog = f"{header}{new_section}{existing_changelog}"
+              with open("CHANGELOG.md", "w", encoding="utf-8") as f:
+                  f.write(updated_changelog.rstrip() + "\n")
+
+          # 6. Update RELEASE.md if not already matching tag_name
+          existing_release = ""
+          if os.path.exists("RELEASE.md"):
+              with open("RELEASE.md", "r", encoding="utf-8") as f:
+                  existing_release = f.read()
+
+          if f"Release {tag_name}" not in existing_release:
+              with open("RELEASE.md", "w", encoding="utf-8") as f:
+                  f.write(f"# Release {tag_name} (Build {code})\n\n{release_notes_body}\n")
+              release_notes_for_gh = release_notes_body
+          else:
+              release_notes_for_gh = existing_release
+
+          with open("/tmp/release_notes.md", "w", encoding="utf-8") as f:
+              f.write(release_notes_for_gh + "\n")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"version_name={version_name}\n")
+              out.write(f"version_code={code}\n")
+              out.write(f"tag_name={tag_name}\n")
+          PY
+
+      - name: Commit version bump, changelog & push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add version.properties CHANGELOG.md RELEASE.md
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(release): ${{ steps.version.outputs.tag_name }} (build ${{ steps.version.outputs.version_code }}) [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+          if ! git rev-parse "${{ steps.version.outputs.tag_name }}" >/dev/null 2>&1; then
+            git tag -a "${{ steps.version.outputs.tag_name }}" -m "Release ${{ steps.version.outputs.tag_name }}"
+            git push origin "${{ steps.version.outputs.tag_name }}"
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Prepare debug keystore and environment
+        run: |
+          if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+          if [ ! -f .env ] && [ -f .env.example ]; then
+            cp .env.example .env
+          fi
+          mkdir -p dist
+
+      - name: Build Debug APK
+        run: |
+          if [ -x ./gradlew ]; then
+            GRADLE_CMD="./gradlew"
+          else
+            GRADLE_CMD="gradle"
+          fi
+          $GRADLE_CMD :app:assembleDebug \
+            -PappVersionCode=${{ steps.version.outputs.version_code }} \
+            -PappVersionName=${{ steps.version.outputs.version_name }} \
+            --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/Brillian-Tools-${{ steps.version.outputs.tag_name }}-b${{ steps.version.outputs.version_code }}-debug.apk"
+
+      - name: Build Signed Release APK (if signing secrets are configured)
+        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' && secrets.STORE_PASSWORD != '' && secrets.KEY_PASSWORD != '' }}
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "${KEYSTORE_PATH}"
+          if [ -x ./gradlew ]; then
+            GRADLE_CMD="./gradlew"
+          else
+            GRADLE_CMD="gradle"
+          fi
+          $GRADLE_CMD :app:assembleRelease \
+            -PappVersionCode=${{ steps.version.outputs.version_code }} \
+            -PappVersionName=${{ steps.version.outputs.version_name }} \
+            --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk "dist/Brillian-Tools-${{ steps.version.outputs.tag_name }}-b${{ steps.version.outputs.version_code }}-release.apk"
+          rm -f "${KEYSTORE_PATH}"
+
+      - name: Upload APK Workflow Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Brillian-Tools-${{ steps.version.outputs.tag_name }}-APKs
+          path: dist/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release with APK & Changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: "${{ steps.version.outputs.tag_name }} - Brillian Tools (Build ${{ steps.version.outputs.version_code }})"
+          body_path: /tmp/release_notes.md
+          files: dist/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

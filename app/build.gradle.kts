@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
@@ -9,6 +10,23 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+val versionPropsFile = rootProject.file("version.properties")
+val versionProps = Properties().apply {
+  if (versionPropsFile.exists()) {
+    versionPropsFile.inputStream().use { load(it) }
+  }
+}
+val resolvedVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull()
+  ?: versionProps.getProperty("VERSION_CODE")?.toIntOrNull()
+  ?: 4
+val resolvedVersionName = (project.findProperty("appVersionName") as String?)
+  ?: run {
+    val maj = versionProps.getProperty("VERSION_MAJOR")
+    val min = versionProps.getProperty("VERSION_MINOR")
+    val pat = versionProps.getProperty("VERSION_PATCH")
+    if (maj != null && min != null && pat != null) "$maj.$min.$pat" else "1.3.0"
+  }
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -17,8 +35,8 @@ android {
     applicationId = "com.aistudio.brilliantools.app"
     minSdk = 24
     targetSdk = 36
-    versionCode = 3
-    versionName = "1.2"
+    versionCode = resolvedVersionCode
+    versionName = resolvedVersionName
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
